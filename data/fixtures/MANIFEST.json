@@ -1,0 +1,20 @@
+{
+  "description": "Immutable fixture manifest. Hashes are over LF-normalised bytes.",
+  "generated_by": "scripts/generate_fixtures.py",
+  "replay_seed": 20260303,
+  "license": "CC0-1.0-synthetic",
+  "synthetic": true,
+  "files": {
+    "instruments.json": {
+      "sha256": "1b942235cfed8f31310d0904b084c5e6582e7c3d8ffa3a316b439600c5cdca96"
+    },
+    "news/replay.jsonl": {
+      "sha256": "2ccc1b2852a101a044fa9d7709502f2390526aa6945d3a415a2272e5f00129f5",
+      "lines": 121
+    },
+    "news/seed.jsonl": {
+      "sha256": "9b6d65add5820c6ba3a480ce95d53fdf8c5eeeb59caa2516a9d319ff06e20d26",
+      "lines": 18
+    }
+  }
+}

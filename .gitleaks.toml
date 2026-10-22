@@ -1,0 +1,22 @@
+# Secret scanning for `make security`.
+#
+# `gitleaks dir` scans the working tree and does not honour .gitignore, so it would
+# otherwise walk local virtualenvs, node_modules and build output. On first run here that
+# produced 216 findings, all of them in .venv (third-party test data) and web/.next
+# (generated per build). None of those paths are ever committed. Everything else,
+# including every tracked source, fixture and config file, is scanned with the default
+# rules.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Git-ignored local dependency, cache and build directories"
+paths = [
+  '''(^|/)\.venv/''',
+  '''(^|/)node_modules/''',
+  '''(^|/)\.next/''',
+  '''(^|/)\.(mypy|ruff|pytest)_cache/''',
+  '''(^|/)var/''',
+  '''(^|/)\.git/''',
+]

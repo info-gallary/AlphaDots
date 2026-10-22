@@ -1,0 +1,123 @@
+[project]
+name = "alphadots-workspace"
+version = "0.1.0"
+description = "AlphaDots: point-in-time-correct market sentiment research platform (research only, not investment advice)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "alphadots-contracts",
+    "alphadots-common[db]",
+    "alphadots-quant",
+    "alphadots-ingestion",
+    "alphadots-preprocessor",
+    "alphadots-sentiment",
+    "alphadots-signal-engine",
+    "alphadots-api",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
+    "httpx>=0.27",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "pip-audit>=2.7",
+]
+
+[tool.uv.workspace]
+members = ["libs/*", "services/*"]
+
+[tool.uv.sources]
+alphadots-contracts = { workspace = true }
+alphadots-common = { workspace = true }
+alphadots-quant = { workspace = true }
+alphadots-ingestion = { workspace = true }
+alphadots-preprocessor = { workspace = true }
+alphadots-sentiment = { workspace = true }
+alphadots-signal-engine = { workspace = true }
+alphadots-api = { workspace = true }
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+# One event loop for the whole session, so the processed fixture stacks can be shared.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+# Integration tests need containers; `make test-integration` selects them.
+addopts = "-ra --strict-markers --strict-config -m 'not integration'"
+markers = [
+    "integration: needs running Redpanda and PostgreSQL (see `make test-integration`)",
+]
+filterwarnings = ["error::DeprecationWarning:alphadots.*"]
+
+[tool.coverage.run]
+branch = true
+source = [
+    "alphadots_contracts",
+    "alphadots_common",
+    "alphadots_quant",
+    "alphadots_ingestion",
+    "alphadots_preprocessor",
+    "alphadots_sentiment",
+    "alphadots_signal_engine",
+    "alphadots_api",
+]
+omit = ["*/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["libs/*/src", "services/*/src", "scripts", "tests"]
+extend-exclude = ["web"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "RUF", "ASYNC", "S", "DTZ", "PT", "PL"]
+ignore = [
+    "PLR2004", # magic values are fine in tests and thresholds documented in config
+    "PLR0913", # explicit keyword-only wiring beats bundling arguments
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["alphadots_*", "scripts", "tests"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests assert, use seeded RNGs and pass throwaway tokens on purpose.
+"tests/**" = ["S101", "S106", "S311", "PLR0915"]
+"scripts/**" = ["S311"] # seeded random.Random for reproducible synthetic fixtures
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = [
+    "libs/contracts/src",
+    "libs/common/src",
+    "libs/quant/src",
+    "services/ingestion/src",
+    "services/preprocessor/src",
+    "services/sentiment/src",
+    "services/signal_engine/src",
+    "services/api/src",
+]
+packages = [
+    "alphadots_contracts",
+    "alphadots_common",
+    "alphadots_quant",
+    "alphadots_ingestion",
+    "alphadots_preprocessor",
+    "alphadots_sentiment",
+    "alphadots_signal_engine",
+    "alphadots_api",
+]
+
+[[tool.mypy.overrides]]
+module = ["aiokafka.*"]
+ignore_missing_imports = true

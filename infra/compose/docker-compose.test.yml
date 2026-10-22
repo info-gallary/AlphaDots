@@ -1,0 +1,45 @@
+# Throwaway infrastructure for `make test-integration`.
+#
+# A separate project on separate ports with no persistent volumes, so integration tests
+# can create and destroy state freely without touching the development stack's data.
+
+name: alphadots-it
+
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v26.2.4
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=1G
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:29092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:29092
+      - --set
+      - redpanda.auto_create_topics_enabled=false
+    ports:
+      - "127.0.0.1:29092:29092"
+    # Redpanda runs as uid 101; a default tmpfs is root-owned and it could not write to it.
+    tmpfs: ["/var/lib/redpanda/data:uid=101,gid=101,mode=0750"]
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 5s
+
+  postgres:
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_USER: alphadots
+      POSTGRES_PASSWORD: alphadots-it
+      POSTGRES_DB: alphadots_it
+    ports:
+      - "127.0.0.1:25432:5432"
+    tmpfs: ["/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alphadots -d alphadots_it"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

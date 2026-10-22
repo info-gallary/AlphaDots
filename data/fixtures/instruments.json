@@ -1,0 +1,66 @@
+{
+  "version": "synthetic-2026.1",
+  "license": "CC0-1.0 (synthetic; every issuer, ticker and identifier here is invented)",
+  "note": "Fictional issuers for deterministic tests and demos. Any resemblance to a real company or ticker is coincidental and must not be relied upon.",
+  "instruments": [
+    {
+      "instrument_id": "SYN-0001",
+      "name": "Northwind Semiconductor Corp",
+      "sector": "Semiconductors",
+      "aliases": ["Northwind Semiconductor", "Northwind"],
+      "listings": [{"symbol": "NWSC", "valid_from": "2019-01-02", "valid_to": null}]
+    },
+    {
+      "instrument_id": "SYN-0002",
+      "name": "Halcyon Biotherapeutics Inc",
+      "sector": "Biotechnology",
+      "aliases": ["Halcyon Biotherapeutics", "Halcyon Bio", "Halcyon"],
+      "listings": [{"symbol": "HLCB", "valid_from": "2021-06-15", "valid_to": null}]
+    },
+    {
+      "instrument_id": "SYN-0003",
+      "name": "Meridian Freight Systems Inc",
+      "sector": "Transportation",
+      "aliases": ["Meridian Freight Systems", "Meridian Freight"],
+      "listings": [{"symbol": "MRFS", "valid_from": "2015-03-10", "valid_to": null}]
+    },
+    {
+      "instrument_id": "SYN-0004",
+      "name": "Apex Robotics Corp",
+      "sector": "Industrial Automation",
+      "aliases": ["Apex Robotics", "Apex"],
+      "listings": [{"symbol": "APXR", "valid_from": "2018-09-04", "valid_to": null}]
+    },
+    {
+      "instrument_id": "SYN-0005",
+      "name": "Apex Energy Partners LP",
+      "sector": "Energy",
+      "aliases": ["Apex Energy Partners", "Apex Energy", "Apex"],
+      "listings": [{"symbol": "APXE", "valid_from": "2012-05-21", "valid_to": null}]
+    },
+    {
+      "instrument_id": "SYN-0006",
+      "name": "Cobalt Harbor Bancorp",
+      "sector": "Banks",
+      "aliases": ["Cobalt Harbor Bank", "Cobalt Harbor"],
+      "listings": [{"symbol": "CBHB", "valid_from": "2010-11-01", "valid_to": null}]
+    },
+    {
+      "instrument_id": "SYN-0007",
+      "name": "Lumen Grid Utilities Co",
+      "sector": "Utilities",
+      "aliases": ["Lumen Grid Utilities", "Lumen Grid"],
+      "listings": [{"symbol": "LMGU", "valid_from": "2008-02-19", "valid_to": null}]
+    },
+    {
+      "instrument_id": "SYN-0008",
+      "name": "Vireo Cloud Software Inc",
+      "sector": "Software",
+      "aliases": ["Vireo Cloud Software", "Vireo Cloud", "Vireo"],
+      "listings": [
+        {"symbol": "VIRE", "valid_from": "2020-10-08", "valid_to": "2026-03-08"},
+        {"symbol": "VRCS", "valid_from": "2026-03-09", "valid_to": null}
+      ]
+    }
+  ]
+}

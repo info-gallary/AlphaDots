@@ -1,0 +1,351 @@
+{
+  "$defs": {
+    "InstrumentRef": {
+      "description": "A resolved link between an event and a tradable instrument.\n\n``instrument_id`` is the stable identifier; ``symbol`` is the ticker that was effective\nat the event's publication time and may be reused by a different issuer later.",
+      "properties": {
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "instrument_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Instrument Id",
+          "type": "string"
+        },
+        "symbol": {
+          "maxLength": 16,
+          "minLength": 1,
+          "title": "Symbol",
+          "type": "string"
+        }
+      },
+      "required": [
+        "symbol",
+        "instrument_id",
+        "confidence"
+      ],
+      "title": "InstrumentRef",
+      "type": "object"
+    },
+    "RiskFlag": {
+      "enum": [
+        "low_coverage",
+        "ambiguous_issuer",
+        "single_source"
+      ],
+      "title": "RiskFlag",
+      "type": "string"
+    },
+    "SignalAbstainReason": {
+      "enum": [
+        "insufficient_evidence",
+        "no_usable_events"
+      ],
+      "title": "SignalAbstainReason",
+      "type": "string"
+    },
+    "SignalContribution": {
+      "description": "One evidence item behind a signal, so every number is traceable to a source.",
+      "properties": {
+        "age_seconds": {
+          "minimum": 0,
+          "title": "Age Seconds",
+          "type": "number"
+        },
+        "available_at": {
+          "format": "date-time",
+          "title": "Available At",
+          "type": "string"
+        },
+        "contribution": {
+          "title": "Contribution",
+          "type": "number"
+        },
+        "normalized_event_id": {
+          "title": "Normalized Event Id",
+          "type": "string"
+        },
+        "scored_event_id": {
+          "title": "Scored Event Id",
+          "type": "string"
+        },
+        "signed_sentiment": {
+          "maximum": 1.0,
+          "minimum": -1.0,
+          "title": "Signed Sentiment",
+          "type": "number"
+        },
+        "weight": {
+          "minimum": 0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "scored_event_id",
+        "normalized_event_id",
+        "available_at",
+        "age_seconds",
+        "weight",
+        "signed_sentiment",
+        "contribution"
+      ],
+      "title": "SignalContribution",
+      "type": "object"
+    },
+    "SignalCoverage": {
+      "properties": {
+        "duplicates_excluded": {
+          "minimum": 0,
+          "title": "Duplicates Excluded",
+          "type": "integer"
+        },
+        "effective_weight": {
+          "minimum": 0,
+          "title": "Effective Weight",
+          "type": "number"
+        },
+        "events_abstained": {
+          "minimum": 0,
+          "title": "Events Abstained",
+          "type": "integer"
+        },
+        "events_considered": {
+          "minimum": 0,
+          "title": "Events Considered",
+          "type": "integer"
+        },
+        "events_used": {
+          "minimum": 0,
+          "title": "Events Used",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "events_considered",
+        "events_used",
+        "events_abstained",
+        "duplicates_excluded",
+        "effective_weight"
+      ],
+      "title": "SignalCoverage",
+      "type": "object"
+    },
+    "SignalParams": {
+      "properties": {
+        "lookback_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Lookback Seconds",
+          "type": "number"
+        },
+        "min_effective_weight": {
+          "minimum": 0,
+          "title": "Min Effective Weight",
+          "type": "number"
+        },
+        "stance_threshold": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Stance Threshold",
+          "type": "number"
+        },
+        "tau_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Tau Seconds",
+          "type": "number"
+        },
+        "tau_source": {
+          "enum": [
+            "config_prior_unestimated",
+            "estimated_on_training_folds"
+          ],
+          "title": "Tau Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tau_seconds",
+        "lookback_seconds",
+        "tau_source",
+        "stance_threshold",
+        "min_effective_weight"
+      ],
+      "title": "SignalParams",
+      "type": "object"
+    },
+    "Stance": {
+      "enum": [
+        "positive",
+        "negative",
+        "neutral"
+      ],
+      "title": "Stance",
+      "type": "string"
+    },
+    "ValidationStatus": {
+      "description": "How much empirical support a signal has. Consumers must surface this.",
+      "enum": [
+        "unvalidated_heuristic",
+        "out_of_sample_evaluated"
+      ],
+      "title": "ValidationStatus",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "abstain_reason": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SignalAbstainReason"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "abstained": {
+      "title": "Abstained",
+      "type": "boolean"
+    },
+    "as_of": {
+      "description": "Decision time. Every input satisfies available_at <= as_of.",
+      "format": "date-time",
+      "title": "As Of",
+      "type": "string"
+    },
+    "available_at": {
+      "description": "Earliest time a consumer could realistically have used this message. Every point-in-time filter compares against this field.",
+      "format": "date-time",
+      "title": "Available At",
+      "type": "string"
+    },
+    "contributions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/SignalContribution"
+      },
+      "title": "Contributions",
+      "type": "array"
+    },
+    "contributions_truncated": {
+      "default": false,
+      "title": "Contributions Truncated",
+      "type": "boolean"
+    },
+    "coverage": {
+      "$ref": "#/$defs/SignalCoverage"
+    },
+    "event_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Event Id",
+      "type": "string"
+    },
+    "horizon": {
+      "enum": [
+        "1d",
+        "5d"
+      ],
+      "title": "Horizon",
+      "type": "string"
+    },
+    "instrument": {
+      "$ref": "#/$defs/InstrumentRef"
+    },
+    "model_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Model Id",
+      "type": "string"
+    },
+    "model_version": {
+      "maxLength": 32,
+      "minLength": 1,
+      "title": "Model Version",
+      "type": "string"
+    },
+    "params": {
+      "$ref": "#/$defs/SignalParams"
+    },
+    "research_only": {
+      "const": true,
+      "default": true,
+      "title": "Research Only",
+      "type": "boolean"
+    },
+    "risk_flags": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RiskFlag"
+      },
+      "title": "Risk Flags",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^1\\.\\d+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "score": {
+      "description": "Raw decayed sentiment sum S(i,t); unbounded.",
+      "title": "Score",
+      "type": "number"
+    },
+    "score_normalized": {
+      "description": "Weight-normalised S(i,t).",
+      "maximum": 1.0,
+      "minimum": -1.0,
+      "title": "Score Normalized",
+      "type": "number"
+    },
+    "signal_kind": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Signal Kind",
+      "type": "string"
+    },
+    "stance": {
+      "$ref": "#/$defs/Stance"
+    },
+    "trace_id": {
+      "pattern": "^[0-9a-f]{32}$",
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "triggering_event_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Triggering Event Id",
+      "type": "string"
+    },
+    "validation_status": {
+      "$ref": "#/$defs/ValidationStatus"
+    }
+  },
+  "required": [
+    "event_id",
+    "trace_id",
+    "available_at",
+    "instrument",
+    "as_of",
+    "horizon",
+    "signal_kind",
+    "model_id",
+    "model_version",
+    "validation_status",
+    "score",
+    "score_normalized",
+    "stance",
+    "abstained",
+    "params",
+    "coverage",
+    "triggering_event_id"
+  ],
+  "title": "SignalGeneratedV1",
+  "type": "object"
+}

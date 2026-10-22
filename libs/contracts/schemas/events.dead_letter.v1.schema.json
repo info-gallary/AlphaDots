@@ -1,0 +1,125 @@
+{
+  "$defs": {
+    "DeadLetterReason": {
+      "enum": [
+        "invalid_json",
+        "validation_error",
+        "handler_error",
+        "poison_source_record"
+      ],
+      "title": "DeadLetterReason",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "available_at": {
+      "description": "Earliest time a consumer could realistically have used this message. Every point-in-time filter compares against this field.",
+      "format": "date-time",
+      "title": "Available At",
+      "type": "string"
+    },
+    "error_detail": {
+      "maxLength": 2000,
+      "title": "Error Detail",
+      "type": "string"
+    },
+    "event_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Event Id",
+      "type": "string"
+    },
+    "failed_at": {
+      "format": "date-time",
+      "title": "Failed At",
+      "type": "string"
+    },
+    "original_key": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Original Key"
+    },
+    "original_offset": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Original Offset"
+    },
+    "original_partition": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Original Partition"
+    },
+    "original_topic": {
+      "maxLength": 255,
+      "minLength": 1,
+      "title": "Original Topic",
+      "type": "string"
+    },
+    "payload": {
+      "description": "Original payload decoded as UTF-8 (lossy) and truncated; for replay.",
+      "maxLength": 65536,
+      "title": "Payload",
+      "type": "string"
+    },
+    "payload_truncated": {
+      "default": false,
+      "title": "Payload Truncated",
+      "type": "boolean"
+    },
+    "reason": {
+      "$ref": "#/$defs/DeadLetterReason"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^1\\.\\d+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "service": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Service",
+      "type": "string"
+    },
+    "trace_id": {
+      "pattern": "^[0-9a-f]{32}$",
+      "title": "Trace Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "trace_id",
+    "available_at",
+    "service",
+    "reason",
+    "original_topic",
+    "error_detail",
+    "payload",
+    "failed_at"
+  ],
+  "title": "DeadLetterV1",
+  "type": "object"
+}

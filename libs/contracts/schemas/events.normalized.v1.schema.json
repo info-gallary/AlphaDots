@@ -1,0 +1,218 @@
+{
+  "$defs": {
+    "InstrumentRef": {
+      "description": "A resolved link between an event and a tradable instrument.\n\n``instrument_id`` is the stable identifier; ``symbol`` is the ticker that was effective\nat the event's publication time and may be reused by a different issuer later.",
+      "properties": {
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "instrument_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Instrument Id",
+          "type": "string"
+        },
+        "symbol": {
+          "maxLength": 16,
+          "minLength": 1,
+          "title": "Symbol",
+          "type": "string"
+        }
+      },
+      "required": [
+        "symbol",
+        "instrument_id",
+        "confidence"
+      ],
+      "title": "InstrumentRef",
+      "type": "object"
+    },
+    "ResolutionFlag": {
+      "enum": [
+        "unresolved",
+        "ambiguous_issuer",
+        "provider_symbol_unknown",
+        "multi_issuer"
+      ],
+      "title": "ResolutionFlag",
+      "type": "string"
+    }
+  },
+  "description": "``events.normalized.v1`` \u2014 cleaned text, dedup cluster and resolved instruments.",
+  "properties": {
+    "available_at": {
+      "description": "Earliest time a consumer could realistically have used this message. Every point-in-time filter compares against this field.",
+      "format": "date-time",
+      "title": "Available At",
+      "type": "string"
+    },
+    "body": {
+      "anyOf": [
+        {
+          "maxLength": 20000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Body"
+    },
+    "cluster_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Cluster Id",
+      "type": "string"
+    },
+    "content_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "duplicate_of": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "event_id of the canonical event in this dedup cluster, if this is a copy.",
+      "title": "Duplicate Of"
+    },
+    "event_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Event Id",
+      "type": "string"
+    },
+    "first_seen_at": {
+      "description": "When AlphaDots first observed the item.",
+      "format": "date-time",
+      "title": "First Seen At",
+      "type": "string"
+    },
+    "headline": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Headline",
+      "type": "string"
+    },
+    "ingested_at": {
+      "description": "When the item was accepted into the pipeline.",
+      "format": "date-time",
+      "title": "Ingested At",
+      "type": "string"
+    },
+    "instruments": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/InstrumentRef"
+      },
+      "title": "Instruments",
+      "type": "array"
+    },
+    "language": {
+      "maxLength": 16,
+      "minLength": 2,
+      "title": "Language",
+      "type": "string"
+    },
+    "normalizer_version": {
+      "maxLength": 32,
+      "minLength": 1,
+      "title": "Normalizer Version",
+      "type": "string"
+    },
+    "payload_ref": {
+      "description": "URI of the immutable raw payload (fixture://, s3://, ...).",
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Payload Ref",
+      "type": "string"
+    },
+    "published_at": {
+      "description": "Publication time as claimed by the source.",
+      "format": "date-time",
+      "title": "Published At",
+      "type": "string"
+    },
+    "raw_event_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Raw Event Id",
+      "type": "string"
+    },
+    "resolution_flags": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ResolutionFlag"
+      },
+      "title": "Resolution Flags",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^1\\.\\d+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Source",
+      "type": "string"
+    },
+    "source_event_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Source Event Id",
+      "type": "string"
+    },
+    "source_license": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Source License",
+      "type": "string"
+    },
+    "source_url": {
+      "maxLength": 2048,
+      "minLength": 1,
+      "pattern": "^https?://",
+      "title": "Source Url",
+      "type": "string"
+    },
+    "trace_id": {
+      "pattern": "^[0-9a-f]{32}$",
+      "title": "Trace Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "trace_id",
+    "available_at",
+    "source",
+    "source_event_id",
+    "content_hash",
+    "source_url",
+    "published_at",
+    "first_seen_at",
+    "ingested_at",
+    "source_license",
+    "payload_ref",
+    "raw_event_id",
+    "headline",
+    "language",
+    "cluster_id",
+    "normalizer_version"
+  ],
+  "title": "NormalizedEventV1",
+  "type": "object"
+}

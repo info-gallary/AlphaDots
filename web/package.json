@@ -1,0 +1,32 @@
+{
+  "name": "alphadots-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AlphaDots research dashboard. Reads the AlphaDots API; research only, not investment advice.",
+  "packageManager": "pnpm@10.18.1",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test test/parity.test.ts"
+  },
+  "dependencies": {
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.0",
+    "typescript": "5.9.3"
+  }
+}

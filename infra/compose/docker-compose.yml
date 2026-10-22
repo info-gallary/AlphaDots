@@ -1,0 +1,227 @@
+# AlphaDots local platform.
+#
+#   make up        -> profile `core`: Redpanda, PostgreSQL, the four services
+#   make seed      -> profile `jobs`: one-shot ingestion of the curated fixture
+#   make ui        -> profile `ui`:   the Next.js dashboard
+#
+# Every published port binds to 127.0.0.1 only. The credentials below are local
+# development defaults, not secrets; a deployed environment takes them from a secret
+# store (M5). Single-node Redpanda and PostgreSQL here are for development and are in no
+# way equivalent to a highly available production setup.
+#
+# Profiles named by the specification but not present yet, because nothing uses them:
+# `ml` (FinBERT, M2), `agents` (M4), `obs` (Prometheus/Grafana, M5).
+
+name: alphadots
+
+x-python-service: &python-service
+  restart: unless-stopped
+  profiles: ["core"]
+  read_only: true
+  tmpfs: ["/tmp"]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: ["ALL"]
+  stop_grace_period: 20s
+  volumes:
+    - ../../data/fixtures:/app/data/fixtures:ro
+  depends_on:
+    redpanda-init:
+      condition: service_completed_successfully
+    postgres:
+      condition: service_healthy
+  deploy:
+    resources:
+      limits:
+        cpus: "0.50"
+        memory: 256M
+
+x-python-env: &python-env
+  ALPHADOTS_BUS_BACKEND: kafka
+  ALPHADOTS_KAFKA_BOOTSTRAP: redpanda:9092
+  ALPHADOTS_DATABASE_URL: postgresql+asyncpg://alphadots:${ALPHADOTS_PG_PASSWORD:-alphadots-local-dev}@postgres:5432/alphadots
+  ALPHADOTS_FIXTURES_DIR: /app/data/fixtures
+  ALPHADOTS_METRICS_PORT: "9100"
+  ALPHADOTS_LOG_LEVEL: ${ALPHADOTS_LOG_LEVEL:-INFO}
+  ALPHADOTS_STAGE_LATENCY_ALLOWANCE_SECONDS: ${ALPHADOTS_STAGE_LATENCY_ALLOWANCE_SECONDS:-1.0}
+
+x-worker-healthcheck: &worker-healthcheck
+  test:
+    - CMD
+    - python
+    - -c
+    - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9100/metrics', timeout=2)"
+  interval: 5s
+  timeout: 3s
+  retries: 12
+  start_period: 5s
+
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v26.2.4
+    profiles: ["core"]
+    restart: unless-stopped
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=1G
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:19092
+      # Topics are created explicitly by `redpanda-init`; a typo must not create one.
+      - --set
+      - redpanda.auto_create_topics_enabled=false
+    ports:
+      - "127.0.0.1:19092:19092"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1536M
+
+  redpanda-init:
+    image: docker.redpanda.com/redpandadata/redpanda:v26.2.4
+    profiles: ["core"]
+    restart: "no"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-ec"]
+    # One partition each: ordering and dedup determinism across partitions need a
+    # partition-key design that belongs to M1. Idempotent, so `make up` can be repeated.
+    command:
+      - |
+        for topic in news.raw.v1 events.normalized.v1 sentiment.scored.v1 signals.generated.v1 events.dead_letter.v1; do
+          rpk topic describe "$$topic" -X brokers=redpanda:9092 >/dev/null 2>&1 \
+            || rpk topic create "$$topic" --partitions 1 --replicas 1 -X brokers=redpanda:9092
+        done
+        rpk topic list -X brokers=redpanda:9092
+
+  postgres:
+    image: postgres:17.11-alpine
+    profiles: ["core"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alphadots
+      POSTGRES_PASSWORD: ${ALPHADOTS_PG_PASSWORD:-alphadots-local-dev}
+      POSTGRES_DB: alphadots
+    ports:
+      - "127.0.0.1:15432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alphadots -d alphadots"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 384M
+
+  preprocessor:
+    <<: *python-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: preprocessor, MODULE: alphadots_preprocessor }
+    environment:
+      <<: *python-env
+    healthcheck: *worker-healthcheck
+
+  sentiment:
+    <<: *python-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: sentiment, MODULE: alphadots_sentiment }
+    environment:
+      <<: *python-env
+    healthcheck: *worker-healthcheck
+
+  signal-engine:
+    <<: *python-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: signal-engine, MODULE: alphadots_signal_engine }
+    environment:
+      <<: *python-env
+      ALPHADOTS_SIGNAL_TAU_SECONDS: ${ALPHADOTS_SIGNAL_TAU_SECONDS:-86400}
+      ALPHADOTS_SIGNAL_LOOKBACK_SECONDS: ${ALPHADOTS_SIGNAL_LOOKBACK_SECONDS:-432000}
+    healthcheck: *worker-healthcheck
+
+  api:
+    <<: *python-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: api, MODULE: alphadots_api }
+    environment:
+      <<: *python-env
+      ALPHADOTS_METRICS_PORT: "0" # the API serves /metrics on its own port
+      ALPHADOTS_API_HOST: 0.0.0.0
+      ALPHADOTS_API_PORT: "8000"
+      ALPHADOTS_API_TOKEN: ${ALPHADOTS_API_TOKEN:-}
+    ports:
+      - "127.0.0.1:18000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  # One-shot job: `docker compose run --rm ingestion replay --fixture news/seed.jsonl`.
+  ingestion:
+    <<: *python-service
+    profiles: ["jobs"]
+    restart: "no"
+    build:
+      context: ../..
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: ingestion, MODULE: alphadots_ingestion }
+    environment:
+      <<: *python-env
+      ALPHADOTS_METRICS_PORT: "0"
+
+  web:
+    profiles: ["ui"]
+    restart: unless-stopped
+    build:
+      context: ../../web
+      dockerfile: Dockerfile
+    read_only: true
+    tmpfs: ["/tmp", "/app/.next/cache"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    environment:
+      ALPHADOTS_API_URL: http://api:8000
+      ALPHADOTS_API_TOKEN: ${ALPHADOTS_API_TOKEN:-}
+    ports:
+      - "127.0.0.1:13000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 384M
+
+volumes:
+  redpanda-data:
+  postgres-data:

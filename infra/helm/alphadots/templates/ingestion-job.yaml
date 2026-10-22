@@ -1,0 +1,54 @@
+# One-shot replay, equivalent to `docker compose run --rm ingestion replay --fixture
+# ...`. Not a Helm hook -- it's meant to be triggered on demand, not on every
+# install/upgrade (replaying the fixture twice is harmless/idempotent downstream, but
+# it is a deliberate action, not something that should fire from a routine `helm
+# upgrade`). `spec.suspend: true` means install/upgrade creates this Job object but no
+# pod runs until it's unsuspended:
+#   kubectl patch job {{ include "alphadots.fullname" . }}-ingestion-replay -n <namespace> \
+#     --type merge -p '{"spec":{"suspend":false}}'
+# `uv run python -m scripts.tasks k8s-smoke` does this for you.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "alphadots.fullname" . }}-ingestion-replay
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  suspend: true # never runs automatically; see note above
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        {{- include "alphadots.componentSelectorLabels" (dict "component" "ingestion" "Release" .Release "Chart" .Chart) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: ingestion
+          image: {{ include "alphadots.serviceImage" (dict "root" . "service" "ingestion") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["replay", "--fixture", {{ .Values.ingestion.fixture | quote }}]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          envFrom:
+            - configMapRef: { name: {{ include "alphadots.fullname" . }}-env }
+          env:
+            - name: ALPHADOTS_DATABASE_URL
+              valueFrom: { secretKeyRef: { name: {{ include "alphadots.fullname" . }}-secrets, key: ALPHADOTS_DATABASE_URL } }
+            - name: ALPHADOTS_METRICS_PORT
+              value: "0"
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: fixtures, mountPath: /app/data/fixtures, readOnly: true }
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: fixtures
+          hostPath: { path: /fixtures, type: DirectoryOrCreate }

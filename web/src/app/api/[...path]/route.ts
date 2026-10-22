@@ -66,6 +66,90 @@ async function fromUpstream(upstream: URL, segments: string[], request: NextRequ
   }
 }
 
+/*
+ * The one write the dashboard makes: asking the research agent for a brief. Only this exact
+ * path is accepted, only a JSON body (a cross-site HTML form cannot send one without a CORS
+ * preflight, which this origin never grants), and only the two fields the API accepts are
+ * forwarded. The agent is bounded server-side (tool calls, tokens, time, cost) regardless.
+ */
+const RESEARCH_JOBS_PATH = "v1/research/jobs";
+const MAX_BODY_BYTES = 1024;
+const SYMBOL_RE = /^[A-Za-z0-9.-]{1,16}$/;
+
+function researchJobBody(raw: string): { symbol: string; as_of: string | null } | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== "object" || parsed === null) return null;
+  const { symbol, as_of: asOf } = parsed as Record<string, unknown>;
+  if (typeof symbol !== "string" || !SYMBOL_RE.test(symbol)) return null;
+  if (asOf !== undefined && asOf !== null && (typeof asOf !== "string" || Number.isNaN(Date.parse(asOf)))) {
+    return null;
+  }
+  return { symbol: symbol.toUpperCase(), as_of: typeof asOf === "string" ? asOf : null };
+}
+
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> },
+): Promise<Response> {
+  const { path } = await context.params;
+  const trace = traceId();
+  if (path.join("/") !== RESEARCH_JOBS_PATH) return errorResponse(404, "not_found", "Not Found", trace);
+  if (request.headers.get("sec-fetch-site") === "cross-site") {
+    return errorResponse(403, "forbidden", "Cross-site requests are not accepted.", trace);
+  }
+  if (!(request.headers.get("content-type") ?? "").startsWith("application/json")) {
+    return errorResponse(415, "unsupported_media_type", "Send the request as application/json.", trace);
+  }
+
+  const source = dataSource();
+  if (source.kind !== "live") {
+    return errorResponse(
+      503,
+      "agent_unavailable",
+      "The research agent runs against a live AlphaDots API. Point ALPHADOTS_API_URL at one started with the agents profile.",
+      trace,
+    );
+  }
+
+  const raw = await request.text();
+  if (raw.length > MAX_BODY_BYTES) return errorResponse(413, "payload_too_large", "Request body is too large.", trace);
+  const body = researchJobBody(raw);
+  if (body === null) {
+    return errorResponse(422, "invalid_request", "Expected {\"symbol\": \"TICKER\", \"as_of\": optional ISO time}.", trace);
+  }
+
+  const headers: Record<string, string> = { accept: "application/json", "content-type": "application/json" };
+  const token = process.env.ALPHADOTS_API_TOKEN;
+  if (token) headers.authorization = `Bearer ${token}`;
+  const base = source.upstream.href.replace(/\/+$/, "");
+  try {
+    const response = await fetch(`${base}/${RESEARCH_JOBS_PATH}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body.as_of ? body : { symbol: body.symbol }),
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+    });
+    return new Response(response.body, {
+      status: response.status,
+      headers: {
+        "content-type": response.headers.get("content-type") ?? "application/json",
+        "cache-control": "no-store",
+        "x-trace-id": response.headers.get("x-trace-id") ?? "",
+        "x-alphadots-source": "live",
+      },
+    });
+  } catch {
+    return errorResponse(502, "upstream_unavailable", "The AlphaDots API is not reachable.", trace);
+  }
+}
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },

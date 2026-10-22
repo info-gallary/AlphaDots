@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useMemo, useState, type PointerEvent } from "react";
 
 import { formatDay, formatMinute, formatSigned, humanize } from "@/lib/format";
 import type { SentimentPoint, SignalPoint } from "@/lib/types";
+import { useWidth } from "@/lib/useWidth";
 
 import { Dot, signOf } from "./primitives";
 
@@ -17,21 +18,6 @@ const TICK_STEPS = [HOUR, 2 * HOUR, 3 * HOUR, 6 * HOUR, 12 * HOUR, 24 * HOUR, 48
 type Hover =
   | { kind: "dot"; point: SentimentPoint; x: number; y: number }
   | { kind: "line"; signal: SignalPoint | null; time: number; x: number; y: number };
-
-function useWidth<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) setWidth(Math.round(entry.contentRect.width));
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-  return [ref, width] as const;
-}
 
 function timeTicks(start: number, end: number, maxTicks: number): number[] {
   const span = end - start;

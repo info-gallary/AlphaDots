@@ -106,3 +106,16 @@ dead_letters = Table(
     Column("failed_at", UtcDateTime(), nullable=False),
     Column("trace_id", String(32), nullable=False),
 )
+
+reports = Table(
+    "api_reports",
+    metadata,
+    Column("report_event_id", String(128), primary_key=True),
+    Column("instrument_id", String(64), nullable=False),
+    Column("symbol", String(16), nullable=False),
+    Column("as_of", UtcDateTime(), nullable=False),
+    Column("available_at", UtcDateTime(), nullable=False),
+    Column("abstained", Boolean, nullable=False),
+    Column("payload", JSON, nullable=False),
+    Index("ix_api_reports_lookup", "instrument_id", "available_at"),
+)

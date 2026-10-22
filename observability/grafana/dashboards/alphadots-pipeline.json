@@ -1,0 +1,109 @@
+{
+  "title": "AlphaDots Pipeline",
+  "uid": "alphadots-pipeline",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "utc",
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "tags": ["alphadots"],
+  "panels": [
+    {
+      "id": 1, "title": "Ingest events rate (by source, status)",
+      "type": "timeseries", "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(alphadots_ingest_events_total[5m])) by (source, status)", "legendFormat": "{{source}} / {{status}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 2, "title": "Ingest lag (seconds, by source)",
+      "type": "timeseries", "gridPos": { "x": 8, "y": 0, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "alphadots_ingest_lag_seconds", "legendFormat": "{{source}}" }],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 3, "title": "Dead-letter events rate (by service, reason)",
+      "type": "timeseries", "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(alphadots_events_dlq_total[5m])) by (service, reason)", "legendFormat": "{{service}} / {{reason}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 4, "title": "Pipeline stage latency (p50 / p95 / p99)",
+      "type": "timeseries", "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(alphadots_pipeline_latency_seconds_bucket[5m])) by (le, stage))", "legendFormat": "p50 {{stage}}" },
+        { "expr": "histogram_quantile(0.95, sum(rate(alphadots_pipeline_latency_seconds_bucket[5m])) by (le, stage))", "legendFormat": "p95 {{stage}}" },
+        { "expr": "histogram_quantile(0.99, sum(rate(alphadots_pipeline_latency_seconds_bucket[5m])) by (le, stage))", "legendFormat": "p99 {{stage}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 5, "title": "Model inference latency (p50 / p95 / p99)",
+      "type": "timeseries", "gridPos": { "x": 8, "y": 8, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(alphadots_model_inference_seconds_bucket[5m])) by (le, model_version))", "legendFormat": "p50 {{model_version}}" },
+        { "expr": "histogram_quantile(0.95, sum(rate(alphadots_model_inference_seconds_bucket[5m])) by (le, model_version))", "legendFormat": "p95 {{model_version}}" },
+        { "expr": "histogram_quantile(0.99, sum(rate(alphadots_model_inference_seconds_bucket[5m])) by (le, model_version))", "legendFormat": "p99 {{model_version}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 6, "title": "Model abstention rate (by reason)",
+      "type": "timeseries", "gridPos": { "x": 16, "y": 8, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(alphadots_model_abstentions_total[5m])) by (reason)", "legendFormat": "{{reason}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 7, "title": "API request rate (by route, status)",
+      "type": "timeseries", "gridPos": { "x": 0, "y": 16, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(alphadots_api_requests_total[5m])) by (route, status)", "legendFormat": "{{route}} / {{status}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 8, "title": "API error rate (4xx / 5xx, by route)",
+      "type": "timeseries", "gridPos": { "x": 8, "y": 16, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(alphadots_api_requests_total{status=~\"4..|5..\"}[5m])) by (route, status)", "legendFormat": "{{route}} / {{status}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 9, "title": "Agent tool-call rate (by tool, status)",
+      "type": "timeseries", "gridPos": { "x": 16, "y": 16, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(alphadots_agent_tool_calls_total[5m])) by (tool, status)", "legendFormat": "{{tool}} / {{status}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 10, "title": "Agent run latency (p50 / p95 / p99, by graph)",
+      "type": "timeseries", "gridPos": { "x": 0, "y": 24, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(alphadots_agent_run_seconds_bucket[5m])) by (le, graph))", "legendFormat": "p50 {{graph}}" },
+        { "expr": "histogram_quantile(0.95, sum(rate(alphadots_agent_run_seconds_bucket[5m])) by (le, graph))", "legendFormat": "p95 {{graph}}" },
+        { "expr": "histogram_quantile(0.99, sum(rate(alphadots_agent_run_seconds_bucket[5m])) by (le, graph))", "legendFormat": "p99 {{graph}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 11, "title": "Agent LLM spend, total (USD, by provider)",
+      "type": "stat", "gridPos": { "x": 8, "y": 24, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(alphadots_agent_cost_usd_total) by (provider)", "legendFormat": "{{provider}}", "instant": true }],
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 }, "overrides": [] }
+    },
+    {
+      "id": 12, "title": "Agent abstention rate (by graph, reason)",
+      "type": "timeseries", "gridPos": { "x": 16, "y": 24, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(alphadots_agent_abstentions_total[5m])) by (graph, reason)", "legendFormat": "{{graph}} / {{reason}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    }
+  ]
+}

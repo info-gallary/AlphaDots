@@ -1,0 +1,77 @@
+# Separate from templates/deployment.yaml's ranged services: the dashboard is a
+# different image (web/Dockerfile, Node, not infra/docker/service.Dockerfile) with a
+# different health endpoint, so it isn't a fit for that generic template.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "alphadots.fullname" . }}-web
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+    {{- include "alphadots.componentLabel" (dict "component" "web") | nindent 4 }}
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector:
+    matchLabels:
+      {{- include "alphadots.componentSelectorLabels" (dict "component" "web" "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "alphadots.labels" . | nindent 8 }}
+        {{- include "alphadots.componentLabel" (dict "component" "web") | nindent 8 }}
+    spec:
+      securityContext:
+        # web/Dockerfile's final stage already runs `USER node` (uid 1000 on
+        # node:*-bookworm-slim); only non-root is asserted here, not a specific uid.
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: web
+          image: {{ if .Values.web.image.registry }}{{ printf "%s/%s:%s" .Values.web.image.registry .Values.web.image.repository .Values.web.image.tag }}{{ else }}{{ printf "%s:%s" .Values.web.image.repository .Values.web.image.tag }}{{ end }}
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          env:
+            - name: ALPHADOTS_API_URL
+              value: "http://{{ include "alphadots.fullname" . }}-api:{{ .Values.services.api.httpPort }}"
+            - name: ALPHADOTS_API_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ include "alphadots.fullname" . }}-secrets, key: ALPHADOTS_API_TOKEN } }
+          ports:
+            - { name: http, containerPort: {{ .Values.web.port }} }
+          readinessProbe:
+            httpGet: { path: /api/health/live, port: {{ .Values.web.port }} }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet: { path: /api/health/live, port: {{ .Values.web.port }} }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: next-cache, mountPath: /app/.next/cache }
+      volumes:
+        - { name: tmp, emptyDir: {} }
+        - { name: next-cache, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "alphadots.fullname" . }}-web
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  type: NodePort
+  selector:
+    {{- include "alphadots.componentSelectorLabels" (dict "component" "web" "Release" .Release "Chart" .Chart) | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.web.port }}
+      targetPort: {{ .Values.web.port }}
+      nodePort: {{ .Values.web.nodePort }}

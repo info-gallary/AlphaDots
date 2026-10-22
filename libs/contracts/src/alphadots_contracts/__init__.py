@@ -23,6 +23,13 @@ from alphadots_contracts.events import (
     ResolutionFlag,
     SentimentScoredV1,
 )
+from alphadots_contracts.research import (
+    Citation,
+    ReportAbstainReason,
+    ReportGeneratedV1,
+    ReportValidationStatus,
+    UncertaintyRating,
+)
 from alphadots_contracts.signals import (
     Horizon,
     RiskFlag,
@@ -44,6 +51,7 @@ __all__ = [
     "TOPIC_MODELS",
     "AbstainReason",
     "BaseMessage",
+    "Citation",
     "ContractModel",
     "DeadLetterReason",
     "DeadLetterV1",
@@ -54,6 +62,9 @@ __all__ = [
     "NormalizedEventV1",
     "PolarityScores",
     "RawNewsV1",
+    "ReportAbstainReason",
+    "ReportGeneratedV1",
+    "ReportValidationStatus",
     "ResolutionFlag",
     "RiskFlag",
     "SentimentScoredV1",
@@ -64,6 +75,7 @@ __all__ = [
     "SignalParams",
     "Stance",
     "Topic",
+    "UncertaintyRating",
     "UtcDateTime",
     "ValidationStatus",
     "model_for",

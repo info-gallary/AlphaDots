@@ -1,0 +1,212 @@
+# Pull-request verification gate (CLAUDE.md §11). Every job below is independent and
+# runs in parallel; `all-checks-passed` is the single required status to wire into
+# branch protection so adding a job here never requires editing that setting again.
+#
+# Nothing in this workflow has access to deployment secrets or pushes any image anywhere
+# — that is `release.yml`'s job, gated to `main` only. Checkov runs in report-only mode
+# (`--soft-fail`) today because no finding-severity waiver policy exists yet to tune a
+# hard gate against (see "Known gaps" in docs/threat-model.md); Trivy's image scan is a
+# hard gate, since CRITICAL/HIGH vulnerable base-image layers are the concrete risk
+# CLAUDE.md §11 asks to block on.
+
+name: pr-verification
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    name: Lint, types, schema snapshots
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: "9"
+      - run: uv sync --locked
+      - run: pnpm install --frozen-lockfile
+        working-directory: web
+      - run: uv run python -m scripts.tasks lint
+
+  test:
+    name: Unit, contract, leakage, e2e tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: "9"
+      - run: uv sync --locked
+      - run: pnpm install --frozen-lockfile
+        working-directory: web
+      # Coverage measured on this repo at 95% on 2026-10-22 (365 tests); the gate is set
+      # to the CLAUDE.md §11 target of >=80% on core Python libraries, not the current
+      # number, so it stays meaningful as code is added rather than just restating today.
+      - run: >
+          uv run pytest -m "not integration"
+          --cov=libs --cov=services
+          --cov-report=xml --cov-report=term-missing
+          --cov-fail-under=80
+      - run: pnpm test
+        working-directory: web
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        if: always()
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: ignore
+
+  test-integration:
+    name: Integration tests (Redpanda + PostgreSQL)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run python -m scripts.tasks test-integration
+
+  security:
+    name: Dependency audit, secret scan, SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: "9"
+      - run: uv sync --locked
+      - run: pnpm install --frozen-lockfile
+        working-directory: web
+      # pip-audit, pnpm audit, gitleaks, semgrep, trivy (filesystem+deps), checkov, SBOM —
+      # whatever `scripts.tasks security` covers at the time this runs; see scripts/tasks.py.
+      - run: uv run python -m scripts.tasks security
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        if: always()
+        with:
+          name: security-reports
+          path: var/security/**
+          if-no-files-found: ignore
+
+  build-images:
+    name: Build + scan image (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: ingestion
+            module: alphadots_ingestion
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: preprocessor
+            module: alphadots_preprocessor
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: sentiment
+            module: alphadots_sentiment
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: signal-engine
+            module: alphadots_signal_engine
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: api
+            module: alphadots_api
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: research-agent
+            module: alphadots_research_agent
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: web
+            module: ""
+            dockerfile: web/Dockerfile
+            context: web
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+      - name: Build
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          build-args: |
+            SERVICE=${{ matrix.service }}
+            MODULE=${{ matrix.module }}
+          tags: alphadots/${{ matrix.service }}:pr-${{ github.event.pull_request.number || 'manual' }}-${{ github.sha }}
+          push: false
+          load: true
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+      - name: Scan with Trivy (blocks on CRITICAL/HIGH)
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
+        with:
+          image-ref: alphadots/${{ matrix.service }}:pr-${{ github.event.pull_request.number || 'manual' }}-${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: true
+          format: table
+
+  terraform-checkov:
+    name: Checkov (Terraform + Helm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
+        with:
+          version: "v3.16.2"
+      - name: Render the Helm chart (template only, no cluster needed)
+        run: helm template alphadots infra/helm/alphadots > /tmp/alphadots-rendered.yaml
+      - name: Checkov against Terraform
+        uses: bridgecrewio/checkov-action@1855a020a7bf7ca99917817796146c6fd5681230 # v12.2977.0
+        with:
+          directory: infra/terraform
+          framework: terraform
+          soft_fail: true # no severity waiver policy yet; see docs/threat-model.md "Known gaps"
+      - name: Checkov against the rendered Helm manifests
+        uses: bridgecrewio/checkov-action@1855a020a7bf7ca99917817796146c6fd5681230 # v12.2977.0
+        with:
+          file: /tmp/alphadots-rendered.yaml
+          framework: kubernetes
+          soft_fail: true
+
+  all-checks-passed:
+    name: All PR checks passed
+    if: always()
+    needs: [lint, test, test-integration, security, build-images, terraform-checkov]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every job above to have succeeded
+        run: |
+          echo '${{ toJSON(needs) }}' | jq -e 'to_entries | all(.value.result == "success")'

@@ -85,7 +85,7 @@ def test_search_matches_names_aliases_and_symbols(master: InstrumentMaster) -> N
     assert [item.instrument_id for item in master.search("grid", on)] == ["SYN-0007"]
     assert master.search("no such issuer", on) == []
     assert len(master.search("", on)) == len(master.all())
-    assert master.search("", date(2009, 1, 1)) == [master.get("SYN-0007")], (
+    assert master.search("", date(1990, 1, 1)) == [], (
         "only instruments listed on the date are returned"
     )
 

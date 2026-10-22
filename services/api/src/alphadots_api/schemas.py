@@ -10,9 +10,9 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-from alphadots_contracts import SCHEMA_VERSION, SignalGeneratedV1
+from alphadots_contracts import SCHEMA_VERSION, ReportGeneratedV1, SignalGeneratedV1
 
 FeedMode = Literal["simulated", "delayed", "live"]
 DISCLAIMER = "Research output. Not investment advice and not an instruction to trade."
@@ -293,4 +293,84 @@ class DeadLetterOut(BaseModel):
 
 class DeadLettersResponse(BaseModel):
     data: list[DeadLetterOut]
+    meta: Meta
+
+
+# -------------------------------------------------------------------- research agent
+
+JobStatus = Literal["pending", "running", "succeeded", "failed"]
+
+
+class ResearchJobCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    symbol: str = Field(min_length=1, max_length=16)
+    as_of: datetime | None = Field(
+        default=None, description="Decision time for the brief. Omit to mean 'now'."
+    )
+
+
+class ResearchJobOut(BaseModel):
+    job_id: str
+    symbol: str
+    status: JobStatus
+    as_of: datetime
+    created_at: datetime
+    started_at: datetime | None
+    finished_at: datetime | None
+    report: ReportGeneratedV1 | None = Field(
+        description=(
+            "Set once status is 'succeeded'. An abstained report is still a 'succeeded' "
+            "job — abstention is a completed, honest answer, not a failure."
+        )
+    )
+    error: str | None = Field(description="Set only when status is 'failed': the run itself broke.")
+
+
+class ResearchJobResponse(BaseModel):
+    data: ResearchJobOut
+    meta: Meta
+
+
+class ResearchBriefResponse(BaseModel):
+    data: ReportGeneratedV1 | None = Field(
+        description="Null when no brief has been generated for this issuer yet."
+    )
+    meta: Meta
+
+
+# -------------------------------------------------------------- agentic monitoring
+
+Severity = Literal["ok", "warning", "critical"]
+
+
+class MonitorFindingOut(BaseModel):
+    severity: Severity
+    title: str
+    detail: str
+    metric: str
+    value: float
+
+
+class MonitorOut(BaseModel):
+    generated_at: datetime
+    status: Severity
+    headline: str
+    summary: str
+    findings: list[MonitorFindingOut]
+    model_id: str
+    model_version: str
+    narration_degraded: bool = Field(
+        description=(
+            "True only when the prose fell back to a fixed template; status/findings "
+            "are decided in Python either way, never by the model."
+        ),
+    )
+    tool_calls: int
+    cost_usd: float | None
+    latency_ms: float
+
+
+class MonitorResponse(BaseModel):
+    data: MonitorOut
+    cached: bool = Field(description="True if this was served from the agent's short-lived cache.")
     meta: Meta

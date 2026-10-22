@@ -1,0 +1,27 @@
+# Non-secret shared environment, mirroring the `x-python-env` anchor in
+# infra/compose/docker-compose.yml. Every long-running service's Deployment loads this
+# with envFrom; per-service extras (ports, hosts, signal priors) are set directly on
+# the container in deployment.yaml from values.services.<key>.extraEnv.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "alphadots.fullname" . }}-env
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+data:
+  ALPHADOTS_BUS_BACKEND: "kafka"
+  ALPHADOTS_KAFKA_BOOTSTRAP: "{{ include "alphadots.fullname" . }}-redpanda:9092"
+  ALPHADOTS_FIXTURES_DIR: {{ .Values.env.fixturesDir | quote }}
+  ALPHADOTS_LOG_LEVEL: {{ .Values.env.logLevel | quote }}
+  ALPHADOTS_STAGE_LATENCY_ALLOWANCE_SECONDS: {{ .Values.env.stageLatencyAllowanceSeconds | quote }}
+  ALPHADOTS_API_URL: "http://{{ include "alphadots.fullname" . }}-api:{{ .Values.services.api.httpPort }}"
+  ALPHADOTS_RESEARCH_AGENT_URL: "http://{{ include "alphadots.fullname" . }}-research-agent:{{ (index .Values.services "research-agent").httpPort }}"
+  ALPHADOTS_LLM_PROVIDER: {{ .Values.researchAgent.llmProvider | quote }}
+  ALPHADOTS_GROQ_MODEL: {{ .Values.researchAgent.groqModel | quote }}
+  ALPHADOTS_GROQ_PRICE_INPUT_PER_M_USD: {{ .Values.researchAgent.groqPriceInputPerMUsd | quote }}
+  ALPHADOTS_GROQ_PRICE_OUTPUT_PER_M_USD: {{ .Values.researchAgent.groqPriceOutputPerMUsd | quote }}
+  ALPHADOTS_AGENT_MAX_TOOL_CALLS: {{ .Values.researchAgent.maxToolCalls | quote }}
+  ALPHADOTS_AGENT_MAX_TOKENS: {{ .Values.researchAgent.maxTokens | quote }}
+  ALPHADOTS_AGENT_TIMEOUT_SECONDS: {{ .Values.researchAgent.timeoutSeconds | quote }}
+  ALPHADOTS_AGENT_MAX_COST_USD: {{ .Values.researchAgent.maxCostUsd | quote }}
+  ALPHADOTS_MONITOR_CACHE_SECONDS: {{ .Values.researchAgent.monitorCacheSeconds | quote }}

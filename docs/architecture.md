@@ -105,9 +105,22 @@ Chart colours come from a validated palette: polarity uses a blue/red diverging 
 checked for colour-vision-deficiency separation and contrast in both themes. Status
 colours always come with a glyph and a label.
 
+## Dashboard views
+
+| View | What it answers |
+|---|---|
+| Overview (`/`) | Which issuers lean which way (signal leaderboard), the tone mix, day-by-day news flow, an issuer × day sentiment heatmap, and the most positive and most negative headlines. |
+| Event tape (`/tape`) | Every accepted item, newest first, with provenance and availability times. |
+| Issuers (`/issuers`) | Latest score and path per issuer, filterable by market (replay universe, NSE India). |
+| Research (`/research`) | The research agent's brief for an issuer: cited bull and bear cases, abstention, run telemetry. |
+| Pipeline (`/system`) | Stage throughput, the monitor agent's findings, the dead-letter queue, milestones. |
+
+Every chart has a table view, so no value is reachable only by hovering.
+
 ## What is not built yet
 
-Market data and features (M3), FinBERT (M2), the research agent (M4), Kubernetes, Helm,
-Terraform, CI/CD and the threat model (M5), and benchmarks (M6). `scripts/tasks.py`
-lists the specification's `make` targets that do not exist yet, rather than stubbing
-them.
+Market data and features (M3), FinBERT (M2), the SEC adapter and watermark policy (M1),
+and benchmarks (M6). Kubernetes is linted and templated but no live k3d cluster has run
+on the development machine (see the threat model's known gaps), and the AWS Terraform has
+been validated, never applied. `scripts/tasks.py` lists the specification's `make`
+targets that do not exist yet, rather than stubbing them.

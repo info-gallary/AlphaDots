@@ -15,6 +15,7 @@ from alphadots_common.worker import Outbound, RetryPolicy, Route, StreamWorker
 from alphadots_contracts import (
     DeadLetterV1,
     NormalizedEventV1,
+    ReportGeneratedV1,
     SentimentScoredV1,
     SignalGeneratedV1,
     Topic,
@@ -43,6 +44,10 @@ def build_projection_worker(
         await read_model.put_dead_letter(dead)
         return []
 
+    async def on_report(report: ReportGeneratedV1) -> Sequence[Outbound]:
+        await read_model.put_report(report)
+        return []
+
     return StreamWorker(
         service=SERVICE,
         bus=bus,
@@ -52,6 +57,7 @@ def build_projection_worker(
             Topic.SENTIMENT_SCORED: Route(SentimentScoredV1, on_sentiment),
             Topic.SIGNALS_GENERATED: Route(SignalGeneratedV1, on_signal),
             Topic.DEAD_LETTER: Route(DeadLetterV1, on_dead_letter),
+            Topic.REPORTS_GENERATED: Route(ReportGeneratedV1, on_report),
         },
         retry=retry,
         infrastructure_errors=DB_INFRASTRUCTURE_ERRORS,

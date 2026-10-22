@@ -1,0 +1,49 @@
+# Scoped Trivy exceptions. Every entry must be a specific CVE/misconfig ID with a comment
+# explaining why it's accepted and an expiry date to revisit it - never a blanket
+# suppression. Every entry below was reached by first finding and fixing everything
+# that was a real, same-cost-or-cheaper fix (see the `vpc`/`s3`/`eks`/`rds` Terraform
+# modules and the Helm `postgres`/`redpanda` StatefulSets for what was actually fixed,
+# not waived, in the same pass as this file).
+
+# AWS-0040 "EKS Clusters should have the public access disabled" and AWS-0041 "EKS
+# cluster should not have open CIDR range for public access" -
+# infra/terraform/modules/eks/main.tf's endpoint_public_access=true is deliberate: this
+# is a dev/reference environment meant to be reached by `kubectl`/CI without a VPN or
+# bastion host, which a private-only endpoint would require standing up. Revisit by
+# 2027-04-22 (6 months) or before this is ever used as anything other than a reference
+# environment.
+AWS-0040 exp:2027-04-22
+AWS-0041 exp:2027-04-22
+
+# AWS-0104 "A security group rule should not allow unrestricted egress" -
+# infra/terraform/modules/eks/main.tf's cluster control-plane security group. The EKS
+# control plane needs outbound HTTPS to several AWS service endpoints (ECR, STS, the
+# EKS API itself, CloudWatch) whose IP ranges are not fixed; scoping this down correctly
+# needs VPC endpoints for each of those services, which is a real hardening step, not a
+# one-line fix, and out of scope for this milestone. (The equivalent RDS security group
+# finding was fixed outright instead of waived - infra/terraform/modules/rds/main.tf's
+# aws_security_group.db now has egress=[], since PostgreSQL has no legitimate reason to
+# initiate outbound connections at all.) Revisit by 2027-04-22 (6 months).
+AWS-0104 exp:2027-04-22
+
+# KSV-0109 "ConfigMap with secrets" - infra/helm/alphadots/templates/configmap.yaml. A
+# false positive: the trigger is the substring "TOKEN" inside the non-secret key
+# ALPHADOTS_AGENT_MAX_TOKENS (a per-run LLM token-count limit, see
+# docs/cost-guardrails.md), not a credential. Every actual credential
+# (ALPHADOTS_API_TOKEN, ALPHADOTS_GROQ_API_KEY, POSTGRES_PASSWORD,
+# ALPHADOTS_DATABASE_URL) is already in templates/secret.yaml, a real Secret, not here -
+# see that file's own header comment. Revisit if ConfigMap keys are ever renamed.
+KSV-0109 exp:2027-04-22
+
+# KSV-0014 "Root file system is not read-only" -
+# infra/helm/alphadots/templates/{postgres,redpanda}-statefulset.yaml. Both run with a
+# writable root filesystem, unlike every stateless service in templates/deployment.yaml
+# (which do set readOnlyRootFilesystem: true). Postgres and Redpanda write to more paths
+# than just their PVC-backed data directories (Postgres: a unix-socket directory,
+# temporary files; Redpanda: its own internal scratch paths) that have not been
+# enumerated and tested against a live cluster - k3d cluster creation is currently
+# blocked on this machine by an unrelated network restriction (see
+# infra/k3d/cluster-config.yaml). Converting these two to read-only root filesystems
+# without verifying every write path first risks silently breaking the container rather
+# than hardening it. Revisit once a live cluster is reachable to test against.
+KSV-0014 exp:2027-04-22

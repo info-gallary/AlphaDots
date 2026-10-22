@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and fill in. Never commit the real terraform.tfvars if it
+# ends up containing anything account-specific you don't want in git history (it won't
+# contain secrets - those live in Secrets Manager - but the account id below is still
+# worth keeping out of a public repo's history).
+
+name           = "alphadots-dev"
+aws_region     = "us-east-1"
+account_suffix = "123456789012" # your AWS account id, or any globally-unique suffix
+
+github_repository  = "info-gallary/AlphaDots"
+github_allowed_ref  = "refs/heads/main" # or null to allow any ref

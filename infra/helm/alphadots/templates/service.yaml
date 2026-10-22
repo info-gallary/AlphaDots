@@ -1,0 +1,28 @@
+{{- $root := . -}}
+{{- range $key, $svc := .Values.services }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "alphadots.fullname" $root }}-{{ $key }}
+  labels:
+    {{- include "alphadots.labels" $root | nindent 4 }}
+    {{- include "alphadots.componentLabel" (dict "component" $key) | nindent 4 }}
+spec:
+  type: {{ $svc.serviceType | default "ClusterIP" }}
+  selector:
+    {{- include "alphadots.componentSelectorLabels" (dict "component" $key "Release" $root.Release "Chart" $root.Chart) | nindent 4 }}
+  ports:
+    {{- if $svc.httpPort }}
+    - name: http
+      port: {{ $svc.httpPort }}
+      targetPort: {{ $svc.httpPort }}
+      {{- if and (eq ($svc.serviceType | default "ClusterIP") "NodePort") (eq $key "api") }}
+      nodePort: {{ $root.Values.api.nodePort }}
+      {{- end }}
+    {{- else }}
+    - name: metrics
+      port: {{ $svc.metricsPort }}
+      targetPort: {{ $svc.metricsPort }}
+    {{- end }}
+{{- end }}

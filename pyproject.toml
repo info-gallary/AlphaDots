@@ -8,11 +8,13 @@ dependencies = [
     "alphadots-contracts",
     "alphadots-common[db]",
     "alphadots-quant",
+    "alphadots-llm",
     "alphadots-ingestion",
     "alphadots-preprocessor",
     "alphadots-sentiment",
     "alphadots-signal-engine",
     "alphadots-api",
+    "alphadots-research-agent",
 ]
 
 [dependency-groups]
@@ -33,11 +35,13 @@ members = ["libs/*", "services/*"]
 alphadots-contracts = { workspace = true }
 alphadots-common = { workspace = true }
 alphadots-quant = { workspace = true }
+alphadots-llm = { workspace = true }
 alphadots-ingestion = { workspace = true }
 alphadots-preprocessor = { workspace = true }
 alphadots-sentiment = { workspace = true }
 alphadots-signal-engine = { workspace = true }
 alphadots-api = { workspace = true }
+alphadots-research-agent = { workspace = true }
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -60,11 +64,13 @@ source = [
     "alphadots_contracts",
     "alphadots_common",
     "alphadots_quant",
+    "alphadots_llm",
     "alphadots_ingestion",
     "alphadots_preprocessor",
     "alphadots_sentiment",
     "alphadots_signal_engine",
     "alphadots_api",
+    "alphadots_research_agent",
 ]
 omit = ["*/__main__.py"]
 
@@ -101,23 +107,27 @@ mypy_path = [
     "libs/contracts/src",
     "libs/common/src",
     "libs/quant/src",
+    "libs/llm/src",
     "services/ingestion/src",
     "services/preprocessor/src",
     "services/sentiment/src",
     "services/signal_engine/src",
     "services/api/src",
+    "services/research_agent/src",
 ]
 packages = [
     "alphadots_contracts",
     "alphadots_common",
     "alphadots_quant",
+    "alphadots_llm",
     "alphadots_ingestion",
     "alphadots_preprocessor",
     "alphadots_sentiment",
     "alphadots_signal_engine",
     "alphadots_api",
+    "alphadots_research_agent",
 ]
 
 [[tool.mypy.overrides]]
-module = ["aiokafka.*"]
+module = ["aiokafka.*", "langgraph.*"]
 ignore_missing_imports = true

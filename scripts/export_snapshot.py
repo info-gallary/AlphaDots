@@ -32,7 +32,14 @@ from sqlalchemy import select
 from alphadots_api import tables as api_tables
 from alphadots_api.schemas import DeadLetterOut, EventOut
 from alphadots_common.config import Settings
+from alphadots_common.ids import derive_id
+from alphadots_contracts import InstrumentRef
+from alphadots_llm import MockAdapter
 from alphadots_preprocessor.processor import NORMALIZER_VERSION
+from alphadots_research_agent.bounds import AgentBounds
+from alphadots_research_agent.client import ApiReadClient
+from alphadots_research_agent.monitor_graph import run_monitor
+from alphadots_research_agent.research_graph import run_research
 from alphadots_sentiment import lexicon
 from alphadots_signal_engine import processor as signal_engine
 from scripts.local_stack import LocalStack
@@ -47,6 +54,14 @@ SNAPSHOT_VERSION = 1
 # Quarantined fixture lines carry no timestamp of their own, so they are stamped with the
 # end of the replayed window rather than the wall clock. That keeps the file byte-stable.
 DEAD_LETTER_CLOCK = datetime(2026, 3, 14, 0, 0, tzinfo=UTC)
+
+# Agent output recorded into the snapshot so a deployment without a live API can still show
+# real briefs. Each one is a genuine run of the research and monitor graphs (deterministic
+# mock model) against this same read model, at the end of the replayed window. Two fields
+# depend on the wall clock and would make the file differ on every export, so they are
+# fixed explicitly: `available_at`/`generated_at` take the export clock above, and
+# `latency_ms` is recorded as null ("not measured here") rather than a made-up number.
+AGENT_AS_OF = DEAD_LETTER_CLOCK
 
 # Requests replayed against both implementations. Edge cases are deliberate: point-in-time
 # bounds that hide a score, a retired ticker, an ambiguous issuer, pagination, errors.
@@ -124,8 +139,8 @@ async def _snapshot(stack: LocalStack) -> dict[str, Any]:
     return {
         "snapshot_version": SNAPSHOT_VERSION,
         "description": (
-            "AlphaDots API read model, exported from the real pipeline replaying synthetic "
-            "fixtures. Simulated data; research only; not investment advice."
+            "AlphaDots API read model and agent briefs, exported from the real pipeline "
+            "replaying synthetic fixtures; research only, not investment advice."
         ),
         "generated_by": "scripts/export_snapshot.py",
         "feed_mode": stack.settings.feed_mode,
@@ -159,6 +174,47 @@ async def _snapshot(stack: LocalStack) -> dict[str, Any]:
         "events": events,
         "signals": signals,
         "dead_letters": dead_letters,
+        **await _agent_outputs(stack),
+    }
+
+
+async def _agent_outputs(stack: LocalStack) -> dict[str, Any]:
+    """Run the real research and monitor graphs in-process against the exported read model."""
+    transport = httpx.ASGITransport(app=stack.app())
+    async with httpx.AsyncClient(transport=transport, base_url="http://snapshot") as http:
+        client = ApiReadClient("http://snapshot", token=None, timeout=30, client=http)
+        adapter = MockAdapter()
+        bounds = AgentBounds.from_settings(stack.settings)
+        research: dict[str, Any] = {}
+        for instrument in stack.master.all():
+            symbol = instrument.symbol_on(AGENT_AS_OF.date())
+            if symbol is None:
+                continue
+            report = await run_research(
+                instrument=InstrumentRef(
+                    symbol=symbol, instrument_id=instrument.instrument_id, confidence=1.0
+                ),
+                name=instrument.name,
+                as_of=AGENT_AS_OF,
+                # Same derivation as research_agent's POST /jobs, so IDs match a live run.
+                job_id=derive_id("agentjob", instrument.instrument_id, AGENT_AS_OF.isoformat()),
+                client=client,
+                adapter=adapter,
+                bounds=bounds,
+            )
+            research[symbol] = {
+                **report.model_dump(mode="json"),
+                "available_at": AGENT_AS_OF.isoformat().replace("+00:00", "Z"),
+                "latency_ms": None,
+            }
+        monitor = await run_monitor(client=client, adapter=adapter, bounds=bounds)
+    return {
+        "research": research,
+        "monitor": {
+            **monitor.model_dump(mode="json"),
+            "generated_at": AGENT_AS_OF.isoformat().replace("+00:00", "Z"),
+            "latency_ms": None,
+        },
     }
 
 

@@ -14,15 +14,17 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from pydantic import ValidationError
 
 from alphadots_api import schemas as s
+from alphadots_api.agent_client import AgentClient
 from alphadots_api.errors import ApiError
 from alphadots_api.read_model import ReadModel
 from alphadots_common.config import Settings
 from alphadots_common.logging import get_logger
 from alphadots_common.reference import Instrument, InstrumentMaster
 from alphadots_common.timeutils import parse_window, utc_now
-from alphadots_contracts import Horizon, SignalGeneratedV1
+from alphadots_contracts import Horizon, ReportGeneratedV1, SignalGeneratedV1
 
 _log = get_logger(__name__)
 
@@ -40,6 +42,7 @@ class ApiContext:
     settings: Settings
     read_model: ReadModel
     master: InstrumentMaster
+    agent_client: AgentClient
     projection_alive: Callable[[], bool] | None = None
 
     def meta(self, as_of: datetime | None) -> s.Meta:
@@ -82,12 +85,7 @@ def require_token(request: Request) -> None:
         raise ApiError(401, "unauthorized", "missing or invalid bearer token")
 
 
-def bounded_as_of(
-    as_of: Annotated[
-        datetime | None,
-        Query(description="Point-in-time bound (ISO 8601 with offset). Omit for latest."),
-    ] = None,
-) -> datetime | None:
+def _require_aware(as_of: datetime | None) -> datetime | None:
     if as_of is None:
         return None
     if as_of.tzinfo is None or as_of.utcoffset() is None:
@@ -97,6 +95,15 @@ def bounded_as_of(
             "as_of must include a UTC offset, for example 2026-03-05T14:00:00Z",
         )
     return as_of.astimezone(UTC)
+
+
+def bounded_as_of(
+    as_of: Annotated[
+        datetime | None,
+        Query(description="Point-in-time bound (ISO 8601 with offset). Omit for latest."),
+    ] = None,
+) -> datetime | None:
+    return _require_aware(as_of)
 
 
 Context = Annotated[ApiContext, Depends(get_context)]
@@ -369,3 +376,79 @@ async def get_overview(ctx: Context, as_of: AsOf) -> s.OverviewResponse:
 async def list_dead_letters(ctx: Context, limit: PageLimit = 50) -> s.DeadLettersResponse:
     rows = await ctx.read_model.list_dead_letters(limit)
     return s.DeadLettersResponse(data=[s.DeadLetterOut(**row) for row in rows], meta=ctx.meta(None))
+
+
+# ------------------------------------------------------------ research agent (M4)
+#
+# The API only validates the ticker and proxies to research_agent, which owns every
+# LLM call, bound and citation check. A malformed reply from that service is never
+# passed through as if it were trustworthy: it is rejected here as agent_invalid_response.
+
+
+def _job_out(job: dict[str, Any]) -> s.ResearchJobOut:
+    try:
+        report = ReportGeneratedV1.model_validate(job["report"]) if job.get("report") else None
+        return s.ResearchJobOut(
+            job_id=job["job_id"],
+            symbol=job["symbol"],
+            status=job["status"],
+            as_of=job["as_of"],
+            created_at=job["created_at"],
+            started_at=job.get("started_at"),
+            finished_at=job.get("finished_at"),
+            report=report,
+            error=job.get("error"),
+        )
+    except (ValidationError, KeyError) as exc:
+        raise ApiError(
+            502, "agent_invalid_response", "the research agent returned a malformed job"
+        ) from exc
+
+
+@v1.post("/research/jobs", response_model=s.ResearchJobResponse, tags=["research"])
+async def create_research_job(
+    ctx: Context, body: s.ResearchJobCreateRequest
+) -> s.ResearchJobResponse:
+    as_of = _require_aware(body.as_of)
+    instrument, on = await ctx.resolve_symbol(body.symbol, as_of)
+    ref = _instrument_out(instrument, on)
+    job = await ctx.agent_client.create_job(
+        instrument_id=ref.instrument_id, symbol=ref.symbol, name=instrument.name, as_of=as_of
+    )
+    return s.ResearchJobResponse(data=_job_out(job), meta=ctx.meta(as_of))
+
+
+@v1.get("/research/jobs/{job_id}", response_model=s.ResearchJobResponse, tags=["research"])
+async def get_research_job(ctx: Context, job_id: str) -> s.ResearchJobResponse:
+    job = await ctx.agent_client.get_job(job_id)
+    return s.ResearchJobResponse(data=_job_out(job), meta=ctx.meta(None))
+
+
+@v1.get("/research/{symbol}", response_model=s.ResearchBriefResponse, tags=["research"])
+async def get_latest_research(ctx: Context, as_of: AsOf, symbol: str) -> s.ResearchBriefResponse:
+    instrument, _on = await ctx.resolve_symbol(symbol, as_of)
+    row = await ctx.read_model.get_latest_report(instrument.instrument_id, as_of)
+    if row is None:
+        return s.ResearchBriefResponse(data=None, meta=ctx.meta(as_of))
+    try:
+        report = ReportGeneratedV1.model_validate(row["payload"])
+    except ValidationError as exc:
+        raise ApiError(500, "internal_error", "a stored report failed validation") from exc
+    return s.ResearchBriefResponse(data=report, meta=ctx.meta(as_of))
+
+
+# ------------------------------------------------------------- agentic monitoring (M4)
+
+
+@v1.get("/monitor", response_model=s.MonitorResponse, tags=["operations"])
+async def get_monitor(ctx: Context) -> s.MonitorResponse:
+    result = await ctx.agent_client.get_monitor()
+    try:
+        monitor = s.MonitorOut.model_validate(result["monitor"])
+    except (ValidationError, KeyError) as exc:
+        raise ApiError(
+            502, "agent_invalid_response", "the research agent returned a malformed monitor summary"
+        ) from exc
+    return s.MonitorResponse(
+        data=monitor, cached=bool(result.get("cached", False)), meta=ctx.meta(None)
+    )

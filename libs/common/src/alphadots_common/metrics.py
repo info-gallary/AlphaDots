@@ -1,11 +1,12 @@
 """Prometheus metrics shared across services.
 
 Label values are bounded by construction: sources, services, stages, reasons and route
-templates. Tickers, article IDs and user IDs must never become label values.
+templates. Tickers, article IDs and user IDs must never become label values. The same
+rule applies to the agent metrics below: a job ID or ticker is logged with the run, never
+turned into a label.
 
-Not yet instrumented (each lands with the milestone that owns it):
-``alphadots_kafka_consumer_lag`` (M1), ``alphadots_agent_tool_calls_total`` and
-``alphadots_agent_cost_usd_total`` (M4).
+Not yet instrumented (lands with the milestone that owns it):
+``alphadots_kafka_consumer_lag`` (M1).
 """
 
 from __future__ import annotations
@@ -50,6 +51,27 @@ API_REQUESTS = Counter(
     "alphadots_api_requests_total",
     "API requests by route template and status code.",
     ["route", "status"],
+)
+AGENT_TOOL_CALLS = Counter(
+    "alphadots_agent_tool_calls_total",
+    "Read-only tool calls made by an agent run.",
+    ["tool", "status"],
+)
+AGENT_COST_USD = Counter(
+    "alphadots_agent_cost_usd_total",
+    "Estimated LLM spend. Only incremented when a priced rate is configured.",
+    ["provider"],
+)
+AGENT_RUN_SECONDS = Histogram(
+    "alphadots_agent_run_seconds",
+    "Wall-clock time of one complete agent run (research brief or monitor summary).",
+    ["graph", "outcome"],
+    buckets=(*_LATENCY_BUCKETS, 30.0, 60.0),
+)
+AGENT_ABSTENTIONS = Counter(
+    "alphadots_agent_abstentions_total",
+    "Agent runs that abstained instead of returning an unsupported result.",
+    ["graph", "reason"],
 )
 
 

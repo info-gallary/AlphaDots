@@ -4,7 +4,7 @@ A point-in-time-correct research platform that turns financial news into sentime
 features and research signals, with every number traceable to its source and to the
 moment it became knowable.
 
-![Event tape](docs/images/event-tape.png)
+![Market overview](docs/images/overview.png)
 
 ## What works today
 
@@ -15,12 +15,22 @@ moment it became knowable.
   hidden until its own `available_at`, and future data injected into tests changes nothing.
 - **At-least-once delivery with idempotent effects.** Replays, redeliveries and restarts
   leave state byte-identical, and processing out of order gives the same signals.
-- **A research dashboard** with a live event tape, provenance drill-down and issuer
-  timelines. An as-of slider shows exactly what the system knew at any moment.
+- **A bounded LangGraph research agent.** It writes issuer briefs where every claim cites
+  a stored item, and abstains when evidence is thin (it does for every NSE issuer, which
+  has no news). A second graph monitors the pipeline. Runs on Groq with a key, or on a
+  deterministic mock with none. See [ADR 0003](docs/adr/0003-bounded-research-agent.md).
+- **A research dashboard**: a market overview (signal leaderboard, tone mix, daily news
+  flow, issuer × day heatmap, strongest headlines), the event tape with provenance
+  drill-down, issuer timelines, the research notebook, and pipeline monitoring. An as-of
+  slider shows exactly what the system knew at any moment, and every chart has a table view.
 - **Deployable to Vercel as is.** With no backend attached, the dashboard serves the real
-  pipeline's output from a bundled, parity-tested snapshot.
+  pipeline's output, plus agent briefs recorded at export, from a parity-tested snapshot.
+- **Deployment and DevSecOps**: multi-stage non-root images, Docker Compose profiles, a
+  Helm chart and k3d config, Terraform for AWS (VPC, EKS, ECR, RDS, S3, OIDC IAM),
+  GitHub Actions PR and release workflows, Prometheus and Grafana, six security scanners,
+  an SBOM, and a [threat model](docs/threat-model.md).
 
-![Issuer view](docs/images/issuer-terminal.png)
+![Research notebook](docs/images/research.png)
 
 ## Quick start
 
@@ -52,16 +62,25 @@ make up          # builds images, starts everything, waits until healthy
 make seed        # curated fixture (idempotent; run it twice and nothing changes)
 make smoke       # 13 end-to-end checks against the running API
 make replay      # bulk fixture; add SPEED=20000 for a paced live tape
+make agents      # research agent (Groq if ALPHADOTS_GROQ_API_KEY is set, else mock)
+make agent-smoke # 9 checks: jobs, idempotency, citations, abstention, monitoring
 make ui          # dashboard container on http://localhost:13000
+make obs         # Prometheus on :19090, Grafana on http://localhost:13001
 make down        # ARGS=--volumes also deletes data
 ```
+
+Kubernetes: `make k8s-up`, `make k8s-smoke`, `make k8s-down` (k3d and Helm). Steps,
+rollback and the AWS path are in [`docs/deployment-runbook.md`](docs/deployment-runbook.md);
+what AWS would cost, and why nothing applies it automatically, is in
+[`docs/cost-guardrails.md`](docs/cost-guardrails.md).
 
 ## Deploy the dashboard to Vercel
 
 Import the repository in Vercel, set **Root Directory** to `web`, and deploy. No
-environment variables are needed: it serves the bundled snapshot and says so on screen.
-Set `ALPHADOTS_API_URL` (and optionally `ALPHADOTS_API_TOKEN`) to attach a running API
-instead.
+environment variables are needed: it serves the bundled snapshot, including a recorded
+research brief for every issuer, and shows a **Snapshot** chip. Set `ALPHADOTS_API_URL`
+(and optionally `ALPHADOTS_API_TOKEN`) to attach a running API instead, which also
+enables generating new briefs.
 
 Vercel cannot run Kafka consumers or databases, so the pipeline itself is not deployed
 there. [`docs/deployment-vercel.md`](docs/deployment-vercel.md) covers both modes, the
@@ -74,8 +93,11 @@ CLI route, security properties and caching.
 | `make test` | Python unit, contract, point-in-time leakage and end-to-end tests (in-memory bus, no Docker), plus dashboard parity against the real API |
 | `make test-integration` | The same pipeline on throwaway Redpanda and PostgreSQL containers: offset resume after restart, full redelivery, Kafka/Postgres output identical to the in-memory run |
 | `make lint` | ruff, strict mypy, schema-snapshot and fixture drift, snapshot drift, ESLint, `tsc` |
-| `make security` | pip-audit, `pnpm audit`, gitleaks |
+| `make security` | pip-audit, `pnpm audit`, Gitleaks, Semgrep, Trivy (gating); Checkov (reporting); CycloneDX SBOM |
 | `make web-build` | The production dashboard build Vercel runs |
+
+CI runs the same gates on every pull request (`.github/workflows/pr.yml`), plus a Trivy
+scan of every built image and a coverage floor of 80% (currently about 95%).
 
 Tests worth reading first:
 [`tests/temporal_leakage`](tests/temporal_leakage/test_point_in_time.py),
@@ -88,13 +110,18 @@ Tests worth reading first:
 libs/contracts     versioned Pydantic messages, topic registry, schema compatibility
 libs/common        bus (Kafka + in-memory), worker loop, config, logging, metrics, DB
 libs/quant         decayed-sentiment aggregate with the point-in-time guard
-services/          ingestion · preprocessor · sentiment · signal_engine · api
+libs/llm           bounded LLM adapter: Groq over plain httpx, deterministic mock for CI
+services/          ingestion · preprocessor · sentiment · signal_engine · api · research_agent
 web/               Next.js dashboard (live proxy or bundled snapshot)
-data/fixtures/     synthetic, CC0, hash-pinned by MANIFEST.json
-infra/             Dockerfile, compose stack, throwaway integration stack
-scripts/           task runner, fixture generator, snapshot exporter, smoke check
+data/fixtures/     synthetic news (CC0) plus the instrument master, hash-pinned by MANIFEST.json
+infra/compose      Docker Compose stack and throwaway integration stack
+infra/helm, k3d    Helm chart and local cluster config
+infra/terraform    AWS modules and the dev environment (validated, never applied)
+observability/     Prometheus scrape config, Grafana datasource and dashboard
+.github/workflows  PR verification and release workflows
+scripts/           task runner, fixture generator, snapshot exporter, smoke checks
 tests/             unit · contract · temporal_leakage · e2e · integration
-docs/              architecture, data licences, Vercel deployment, ADRs
+docs/              architecture, threat model, runbooks, cost guardrails, ADRs
 ```
 
 ## Documentation
@@ -103,9 +130,12 @@ docs/              architecture, data licences, Vercel deployment, ADRs
   delivery guarantees
 - [Data and licences](docs/data-licenses.md): what the fixtures contain and why each seed
   line exists
-- [Deploying to Vercel](docs/deployment-vercel.md)
+- [Deploying to Vercel](docs/deployment-vercel.md) and the
+  [deployment runbook](docs/deployment-runbook.md) (Compose, k3d/Helm, AWS)
+- [Threat model](docs/threat-model.md) and [cost guardrails](docs/cost-guardrails.md)
 - ADRs: [0001 M0 scope](docs/adr/0001-m0-vertical-slice.md),
-  [0002 dashboard snapshot mode](docs/adr/0002-dashboard-snapshot-mode.md)
+  [0002 dashboard snapshot mode](docs/adr/0002-dashboard-snapshot-mode.md),
+  [0003 bounded research agent](docs/adr/0003-bounded-research-agent.md)
 
 ## Known limitations
 
@@ -115,6 +145,11 @@ docs/              architecture, data licences, Vercel deployment, ADRs
   configured prior.
 - Dedup is exact-match after normalisation. "First processed wins" is not yet
   order-independent (M1 watermark policy).
-- Not yet built: market data and backtesting (M3), FinBERT (M2), the research agent (M4),
-  Kubernetes, Terraform, CI/CD and the threat model (M5), and benchmarks (M6). The
-  matching `make` targets fail with the milestone that owns them instead of pretending.
+- NSE India issuers have no news source yet, so they carry no events or signals and the
+  research agent abstains for them. Attaching one needs a licensed feed, not scraping.
+- The Helm chart is linted and templated, but `k3d cluster create` could not run on the
+  development machine (it cannot reach ghcr.io for k3d's helper image). The AWS
+  Terraform passes `validate` and has never been applied.
+- Not yet built: the SEC adapter (M1), FinBERT (M2), market data and backtesting (M3),
+  and benchmarks (M6). The matching `make` targets fail with the milestone that owns them
+  instead of pretending.

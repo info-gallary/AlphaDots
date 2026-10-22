@@ -655,6 +655,30 @@ function listDeadLetters(ctx: Context) {
   return { data, meta: meta(ctx, null) };
 }
 
+/** Latest recorded brief for the issuer, visible only once its `available_at <= as_of`. */
+function getResearch(ctx: Context, symbol: string) {
+  const asOf = asOfParam(ctx.query);
+  const [instrument] = resolveSymbol(ctx, symbol, asOf);
+  const report =
+    Object.values(ctx.index.snapshot.research ?? {})
+      .filter(
+        (item) =>
+          item.instrument.instrument_id === instrument.instrument_id &&
+          visible(toMs(item.available_at), asOf),
+      )
+      .sort((a, b) => toMs(b.as_of) - toMs(a.as_of) || compare(b.event_id, a.event_id))[0] ?? null;
+  return { data: report, meta: meta(ctx, asOf) };
+}
+
+function getMonitor(ctx: Context) {
+  const monitor = ctx.index.snapshot.monitor;
+  if (!monitor) {
+    throw new ApiError(503, "agent_unavailable", "This snapshot was exported without a monitor run.");
+  }
+  // Recorded once at export: always a cached answer, never time-filtered (operational).
+  return { data: monitor, cached: true, meta: meta(ctx, null) };
+}
+
 function route(ctx: Context, segments: string[]): unknown {
   const [root, resource, id, ...rest] = segments;
   if (root === "health" && rest.length === 0 && id === undefined) {
@@ -672,6 +696,8 @@ function route(ctx: Context, segments: string[]): unknown {
         return getOverview(ctx);
       case "dead-letters":
         return listDeadLetters(ctx);
+      case "monitor":
+        return getMonitor(ctx);
     }
   } else {
     switch (resource) {
@@ -681,6 +707,8 @@ function route(ctx: Context, segments: string[]): unknown {
         return getSentiment(ctx, id);
       case "signals":
         return getSignals(ctx, id);
+      case "research":
+        return getResearch(ctx, id);
     }
   }
   throw new ApiError(404, "not_found", "Not Found");

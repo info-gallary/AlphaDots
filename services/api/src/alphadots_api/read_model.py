@@ -21,6 +21,7 @@ from alphadots_common.db import upsert
 from alphadots_contracts import (
     DeadLetterV1,
     NormalizedEventV1,
+    ReportGeneratedV1,
     SentimentScoredV1,
     SignalGeneratedV1,
 )
@@ -137,6 +138,19 @@ class ReadModel:
         }
         async with self._engine.begin() as conn:
             await upsert(conn, t.signals, [row], key_columns=["signal_id"])
+
+    async def put_report(self, report: ReportGeneratedV1) -> None:
+        row = {
+            "report_event_id": report.event_id,
+            "instrument_id": report.instrument.instrument_id,
+            "symbol": report.instrument.symbol,
+            "as_of": report.as_of,
+            "available_at": report.available_at,
+            "abstained": report.abstained,
+            "payload": report.model_dump(mode="json"),
+        }
+        async with self._engine.begin() as conn:
+            await upsert(conn, t.reports, [row], key_columns=["report_event_id"])
 
     async def put_dead_letter(self, dead: DeadLetterV1) -> None:
         row = {
@@ -340,6 +354,18 @@ class ReadModel:
             for name, query in queries.items():
                 counts[name] = int((await conn.execute(query)).scalar_one())
         return counts
+
+    async def get_latest_report(self, instrument_id: str, as_of: datetime | None) -> Row | None:
+        """The most recent report (by its own ``as_of``) visible by ``as_of``, if any."""
+        query = select(t.reports).where(t.reports.c.instrument_id == instrument_id)
+        if as_of is not None:
+            query = query.where(t.reports.c.available_at <= as_of)
+        query = query.order_by(t.reports.c.as_of.desc(), t.reports.c.report_event_id.desc()).limit(
+            1
+        )
+        async with self._engine.connect() as conn:
+            rows = _rows(await conn.execute(query))
+        return rows[0] if rows else None
 
     async def list_dead_letters(self, limit: int) -> list[Row]:
         query = (

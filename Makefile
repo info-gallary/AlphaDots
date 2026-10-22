@@ -4,15 +4,16 @@
 # tasks run on Windows without GNU make:  uv run python -m scripts.tasks <target>
 #
 # Specification targets not implemented yet (they fail with the milestone that owns them):
-#   benchmark (M6), k8s-up / k8s-smoke / k8s-down (M5).
+#   benchmark (M6).
 
 TASK := uv run python -m scripts.tasks
 SPEED ?= 0
 ARGS ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup up seed replay smoke ui down dev web web-build test test-integration lint \
-        security fixtures snapshot schemas benchmark k8s-up k8s-smoke k8s-down
+.PHONY: help setup up seed replay smoke agents agent-smoke ui obs down dev dev-agent web web-build \
+        test test-integration lint security fixtures snapshot schemas benchmark k8s-up \
+        k8s-smoke k8s-down
 
 help:              ## List tasks
 	$(TASK)
@@ -32,14 +33,26 @@ replay:            ## Stream the bulk fixture; pace with SPEED=20000
 smoke:             ## Verify ingest -> score -> signal -> API
 	$(TASK) smoke
 
+agents:            ## Start the research agent (Groq if ALPHADOTS_GROQ_API_KEY is set, else mock)
+	$(TASK) agents
+
+agent-smoke:       ## Verify research jobs, citations, abstention and monitoring
+	$(TASK) agent-smoke
+
 ui:                ## Start the dashboard container on :13000
 	$(TASK) ui
+
+obs:               ## Start Prometheus + Grafana on :13001
+	$(TASK) obs
 
 down:              ## Stop the platform (ARGS=--volumes also deletes data)
 	$(TASK) down -- $(ARGS)
 
 dev:               ## Whole pipeline in one process, no Docker
 	$(TASK) dev -- $(ARGS)
+
+dev-agent:         ## Research agent against `make dev` (no Docker)
+	$(TASK) dev-agent -- $(ARGS)
 
 web:               ## Dashboard dev server on :3000
 	$(TASK) web
@@ -68,5 +81,14 @@ snapshot:          ## Re-export the dashboard snapshot and parity goldens
 schemas:           ## Refresh contract schema snapshots
 	$(TASK) schemas
 
-benchmark k8s-up k8s-smoke k8s-down:
+k8s-up:            ## Build images, create/reuse a local k3d cluster, helm upgrade --install
+	$(TASK) k8s-up
+
+k8s-smoke:         ## Unsuspend the ingestion Job and verify ingest -> score -> signal -> API
+	$(TASK) k8s-smoke
+
+k8s-down:          ## helm uninstall and delete the k3d cluster
+	$(TASK) k8s-down
+
+benchmark:
 	$(TASK) $@

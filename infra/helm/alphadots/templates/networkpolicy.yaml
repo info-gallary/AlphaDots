@@ -1,0 +1,125 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $root := . -}}
+{{- $fullname := include "alphadots.fullname" . -}}
+# Deny-by-default ingress for every pod this chart creates, with explicit allows per
+# docs/threat-model.md's "Over-privileged cloud IAM" / infra row. Egress is left open
+# (NetworkPolicy's egress allow-all-by-default when no egress rules/policyTypes are set)
+# since every service needs outbound to Redpanda/Postgres/each other and, for
+# research-agent, an external LLM API -- scoping egress precisely is a possible
+# hardening step, not attempted here.
+#
+# HONEST CAVEAT: k3d's default CNI (flannel, via k3s) does NOT enforce NetworkPolicy at
+# all -- these objects will apply (`kubectl get networkpolicy` lists them) but every
+# rule below is silently a no-op on a stock `k3d cluster create` until a policy-enforcing
+# CNI (Calico, Cilium, kube-router) is installed on top. A real EKS deployment with the
+# VPC CNI needs the same addition (or Cilium) for this to do anything. Do not read a
+# clean `make k8s-smoke` run as evidence these policies are being enforced locally.
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-default-deny-ingress
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-api-ingress
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "alphadots.componentSelectorLabels" (dict "component" "api" "Release" .Release "Chart" .Chart) | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from: [] # reachable from outside the cluster (NodePort) and from web/research-agent
+      ports: [{ port: {{ .Values.services.api.httpPort }}, protocol: TCP }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-research-agent-ingress
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "alphadots.componentSelectorLabels" (dict "component" "research-agent" "Release" .Release "Chart" .Chart) | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    # Internal only: reached by `api` alone, never from outside the cluster -- matches
+    # docs/threat-model.md's note that research-agent publishes no external port.
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "alphadots.componentSelectorLabels" (dict "component" "api" "Release" .Release "Chart" .Chart) | nindent 14 }}
+      ports: [{ port: {{ (index .Values.services "research-agent").httpPort }}, protocol: TCP }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-postgres-ingress
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "alphadots.componentSelectorLabels" (dict "component" "postgres" "Release" .Release "Chart" .Chart) | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector: {} # every pod in this namespace talks to postgres (api + four pipeline services)
+      ports: [{ port: 5432, protocol: TCP }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-redpanda-ingress
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "alphadots.componentSelectorLabels" (dict "component" "redpanda" "Release" .Release "Chart" .Chart) | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector: {} # every pod in this namespace produces/consumes against redpanda
+      ports: [{ port: 9092, protocol: TCP }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-worker-metrics-ingress
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchExpressions:
+      - { key: app.kubernetes.io/component, operator: In, values: ["preprocessor", "sentiment", "signal-engine"] }
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector: {} # future in-namespace Prometheus scrape target (no `obs` profile yet, see M5)
+      ports: [{ port: 9100, protocol: TCP }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-web-ingress
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "alphadots.componentSelectorLabels" (dict "component" "web" "Release" .Release "Chart" .Chart) | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from: [] # reachable from outside the cluster (NodePort)
+      ports: [{ port: {{ .Values.web.port }}, protocol: TCP }]
+{{- end }}

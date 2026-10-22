@@ -11,6 +11,7 @@ import pytest
 from alphadots_api import tables as api_tables
 from alphadots_common.reference import InstrumentMaster
 from alphadots_preprocessor import dedup
+from alphadots_research_agent import jobs as agent_jobs
 from alphadots_signal_engine import store as signal_store
 from scripts.generate_fixtures import MANIFEST_NAME, REPLAY_PATH, build_manifest, build_replay_text
 from tests.conftest import FIXTURES_DIR, REPO_ROOT
@@ -43,10 +44,16 @@ def test_packages_were_discovered() -> None:
         "alphadots_api",
         "alphadots_ingestion",
         "alphadots_preprocessor",
+        "alphadots_research_agent",
         "alphadots_sentiment",
         "alphadots_signal_engine",
     } == SERVICE_PACKAGES
-    assert {"alphadots_common", "alphadots_contracts", "alphadots_quant"} == LIB_PACKAGES
+    assert {
+        "alphadots_common",
+        "alphadots_contracts",
+        "alphadots_llm",
+        "alphadots_quant",
+    } == LIB_PACKAGES
 
 
 @pytest.mark.parametrize("package", sorted(SERVICE_PACKAGES))
@@ -63,8 +70,8 @@ def test_libraries_never_import_services(package: str) -> None:
         assert not foreign, f"{path.relative_to(REPO_ROOT)} imports {sorted(foreign)}"
 
 
-def test_contracts_and_quant_stay_free_of_runtime_plumbing() -> None:
-    for package in ("alphadots_contracts", "alphadots_quant"):
+def test_contracts_quant_and_llm_stay_free_of_runtime_plumbing() -> None:
+    for package in ("alphadots_contracts", "alphadots_quant", "alphadots_llm"):
         for path in _package_files("libs", package):
             assert "alphadots_common" not in _imports(path), path
 
@@ -74,6 +81,7 @@ def test_each_service_owns_a_disjoint_prefixed_set_of_tables() -> None:
         "api_": set(api_tables.metadata.tables),
         "pre_": set(dedup.metadata.tables),
         "sig_": set(signal_store.metadata.tables),
+        "agent_": set(agent_jobs.metadata.tables),
     }
     for prefix, names in owned.items():
         assert names, prefix

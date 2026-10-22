@@ -7,6 +7,7 @@ from enum import StrEnum
 from alphadots_contracts.base import BaseMessage
 from alphadots_contracts.dead_letter import DeadLetterV1
 from alphadots_contracts.events import NormalizedEventV1, RawNewsV1, SentimentScoredV1
+from alphadots_contracts.research import ReportGeneratedV1
 from alphadots_contracts.signals import SignalGeneratedV1
 
 
@@ -27,6 +28,7 @@ TOPIC_MODELS: dict[Topic, type[BaseMessage]] = {
     Topic.EVENTS_NORMALIZED: NormalizedEventV1,
     Topic.SENTIMENT_SCORED: SentimentScoredV1,
     Topic.SIGNALS_GENERATED: SignalGeneratedV1,
+    Topic.REPORTS_GENERATED: ReportGeneratedV1,
     Topic.DEAD_LETTER: DeadLetterV1,
 }
 
@@ -37,7 +39,6 @@ RESERVED_TOPICS: frozenset[Topic] = frozenset(
         Topic.FILINGS_RAW,  # M1
         Topic.MARKET_BARS,  # M3
         Topic.FEATURES_READY,  # M3
-        Topic.REPORTS_GENERATED,  # M4
     }
 )
 

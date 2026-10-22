@@ -76,6 +76,64 @@ test("point-in-time: nothing in any response is newer than as_of", () => {
   for (const item of signals.latest.contributions) assert.ok(Date.parse(item.available_at) <= bound);
 });
 
+interface BriefBody {
+  data: {
+    instrument: { symbol: string; instrument_id: string };
+    available_at: string;
+    abstained: boolean;
+    abstain_reason: string | null;
+    bull_case: { evidence_id: string; evidence_kind: string }[];
+    bear_case: { evidence_id: string; evidence_kind: string }[];
+    research_only: boolean;
+  } | null;
+}
+
+test("research briefs: every covered issuer has one, and every citation resolves", () => {
+  const eventIds = new Set(snapshot.events.map((event) => event.event_id));
+  for (const { instrument_id, listings } of snapshot.reference.instruments) {
+    const symbol = listings[listings.length - 1]!.symbol;
+    const result = request(`/v1/research/${symbol}`);
+    assert.equal(result.status, 200, symbol);
+    const brief = (result.body as BriefBody).data;
+    assert.ok(brief, `no brief for ${symbol}`);
+    assert.equal(brief.instrument.instrument_id, instrument_id);
+    assert.equal(brief.research_only, true);
+    for (const claim of [...brief.bull_case, ...brief.bear_case]) {
+      if (claim.evidence_kind === "event") assert.ok(eventIds.has(claim.evidence_id), claim.evidence_id);
+    }
+  }
+});
+
+test("research briefs: an issuer with no news abstains instead of writing a thesis", () => {
+  const brief = (request("/v1/research/RELIANCE").body as BriefBody).data;
+  assert.ok(brief);
+  assert.equal(brief.abstained, true);
+  assert.equal(brief.abstain_reason, "insufficient_evidence");
+  assert.equal(brief.bull_case.length + brief.bear_case.length, 0);
+});
+
+test("research briefs are point-in-time and resolve retired tickers", () => {
+  const brief = (request("/v1/research/NWSC").body as BriefBody).data;
+  assert.ok(brief);
+  const before = new Date(Date.parse(brief.available_at) - 60_000).toISOString();
+  assert.equal((request(`/v1/research/NWSC?as_of=${before}`).body as BriefBody).data, null);
+  // VIRE (Vireo's ticker until 2026-03-08) still resolves at a time it traded; no brief
+  // existed yet then, so the answer is a 200 with no data rather than a 404.
+  const retired = request("/v1/research/VIRE?as_of=2026-03-05T00:00:00Z");
+  assert.equal(retired.status, 200);
+  assert.equal((retired.body as BriefBody).data, null);
+  assert.equal(request("/v1/research/NOPE").status, 404);
+});
+
+test("monitor: recorded at export and served as a cached answer", () => {
+  const result = request("/v1/monitor");
+  assert.equal(result.status, 200);
+  const body = result.body as { data: { status: string; findings: unknown[] }; cached: boolean };
+  assert.equal(body.cached, true);
+  assert.ok(["ok", "warning", "critical"].includes(body.data.status));
+  assert.ok(Array.isArray(body.data.findings));
+});
+
 test("pagination walks every event exactly once", () => {
   const seen: string[] = [];
   let cursor: string | null = null;

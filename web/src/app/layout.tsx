@@ -9,7 +9,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: { default: "AlphaDots", template: "%s · AlphaDots" },
   description:
-    "Point-in-time market sentiment research terminal. Simulated data; research only; not investment advice.",
+    "Point-in-time market sentiment research terminal. Research only; not investment advice.",
   robots: { index: false, follow: false },
 };
 

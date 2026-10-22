@@ -22,13 +22,17 @@ routes answer in one of two ways:
 
 | Mode | When | Behaviour |
 |---|---|---|
-| **Snapshot** (default) | `ALPHADOTS_API_URL` is unset | Answers from `web/src/data/snapshot.json`, the real pipeline's read model over the synthetic fixtures. The UI shows a **SIMULATED · SNAPSHOT** badge. Nothing to configure. |
+| **Snapshot** (default) | `ALPHADOTS_API_URL` is unset | Answers from `web/src/data/snapshot.json`, the real pipeline's read model over the synthetic fixtures, plus one research brief per issuer and one monitor run recorded at export. The top bar shows a **Snapshot** chip. Nothing to configure. |
 | **Live** | `ALPHADOTS_API_URL` is set | Proxies each request to that API, adding `ALPHADOTS_API_TOKEN` as a bearer token if set. The UI polls for new data. |
 
 ### How the snapshot stays honest
 
 - `scripts/export_snapshot.py` replays the fixtures through the real service code
   in-process and dumps the API's read model. It is not hand-written data.
+- The research briefs and monitor summary in the snapshot are real runs of the LangGraph
+  graphs (deterministic mock model) against that same read model. Their `available_at` is
+  fixed to the end of the replayed window and `latency_ms` is stored as null, since a
+  timing would change on every export; the UI shows "not recorded".
 - The snapshot mode answers point-in-time queries in TypeScript
   (`web/src/server/snapshot-api.ts`), a port of the API's read rules.
 - The same script records the real FastAPI app's responses to 36 requests
@@ -75,8 +79,11 @@ so the tunnel is not an open endpoint.
 
 - The upstream origin comes from configuration only, and the path must match an
   allowlist (`v1/...` or `health/live|ready`), so the route cannot act as an open proxy.
-- Requests are `GET` only. Redirects from the upstream are refused, and calls time out
-  after 10 seconds.
+- Reads are `GET`. The one write is `POST /api/v1/research/jobs` (ask the agent for a
+  brief), accepted only in live mode, only as `application/json` (so a cross-site HTML
+  form cannot trigger it), with `Sec-Fetch-Site: cross-site` rejected, a 1 KiB body cap,
+  and only `symbol` and `as_of` forwarded. Snapshot mode answers it with 503.
+- Redirects from the upstream are refused, and calls time out after 10 seconds.
 - The bearer token is added on the server. `/api/source` reports the mode but never the
   upstream address.
 - Every page sends `X-Content-Type-Options`, `X-Frame-Options: DENY`,
@@ -106,8 +113,9 @@ API function bundle: `.next/server/app/api/[...path]/route.js.nft.json` lists
 
 ## Limits worth knowing
 
-- Snapshot mode is a static view: the as-of slider, filters and drill-downs work, and
-  nothing new arrives. The badge says so.
+- Snapshot mode is a static view: the as-of slider, filters, charts, drill-downs and the
+  recorded research briefs all work, and nothing new arrives. Generating a new brief
+  needs a live API.
 - The snapshot is about 600 KiB and is read once per function instance.
 - Vercel is not used for the pipeline, so nothing here demonstrates its throughput or
   latency. No performance figures are claimed (milestone M6).

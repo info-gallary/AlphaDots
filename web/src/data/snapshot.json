@@ -1,10 +1,10 @@
 {
  "snapshot_version": 1,
- "description": "AlphaDots API read model, exported from the real pipeline replaying synthetic fixtures. Simulated data; research only; not investment advice.",
+ "description": "AlphaDots API read model and agent briefs, exported from the real pipeline replaying synthetic fixtures; research only, not investment advice.",
  "generated_by": "scripts/export_snapshot.py",
  "feed_mode": "simulated",
  "fixtures": {
-  "instruments.json": "1b942235cfed8f31310d0904b084c5e6582e7c3d8ffa3a316b439600c5cdca96",
+  "instruments.json": "fba12a7d0d87a985ebfc4421b86b51e43da128c302725dec4be22c4e6bb21e9f",
   "news/seed.jsonl": "9b6d65add5820c6ba3a480ce95d53fdf8c5eeeb59caa2516a9d319ff06e20d26",
   "news/replay.jsonl": "2ccc1b2852a101a044fa9d7709502f2390526aa6945d3a415a2272e5f00129f5"
  },
@@ -15,8 +15,101 @@
  },
  "reference": {
   "version": "synthetic-2026.1",
-  "license": "CC0-1.0 (synthetic; every issuer, ticker and identifier here is invented)",
+  "license": "Mixed. SYN- entries: CC0-1.0 (synthetic; every issuer, ticker and identifier invented). NSE- entries: real, publicly listed Indian issuers and their real NSE symbols, used as public instrument-identifier reference data only.",
   "instruments": [
+   {
+    "instrument_id": "NSE-0001",
+    "name": "Reliance Industries Ltd",
+    "sector": "Energy / Conglomerate",
+    "aliases": [
+     "Reliance Industries",
+     "Reliance"
+    ],
+    "listings": [
+     {
+      "symbol": "RELIANCE",
+      "valid_from": "1996-01-01",
+      "valid_to": null
+     }
+    ]
+   },
+   {
+    "instrument_id": "NSE-0002",
+    "name": "Tata Consultancy Services Ltd",
+    "sector": "IT Services",
+    "aliases": [
+     "Tata Consultancy Services",
+     "TCS"
+    ],
+    "listings": [
+     {
+      "symbol": "TCS",
+      "valid_from": "2004-08-25",
+      "valid_to": null
+     }
+    ]
+   },
+   {
+    "instrument_id": "NSE-0003",
+    "name": "Infosys Ltd",
+    "sector": "IT Services",
+    "aliases": [
+     "Infosys"
+    ],
+    "listings": [
+     {
+      "symbol": "INFY",
+      "valid_from": "1996-01-01",
+      "valid_to": null
+     }
+    ]
+   },
+   {
+    "instrument_id": "NSE-0004",
+    "name": "HDFC Bank Ltd",
+    "sector": "Banks",
+    "aliases": [
+     "HDFC Bank"
+    ],
+    "listings": [
+     {
+      "symbol": "HDFCBANK",
+      "valid_from": "1996-01-01",
+      "valid_to": null
+     }
+    ]
+   },
+   {
+    "instrument_id": "NSE-0005",
+    "name": "ICICI Bank Ltd",
+    "sector": "Banks",
+    "aliases": [
+     "ICICI Bank"
+    ],
+    "listings": [
+     {
+      "symbol": "ICICIBANK",
+      "valid_from": "1998-01-01",
+      "valid_to": null
+     }
+    ]
+   },
+   {
+    "instrument_id": "NSE-0006",
+    "name": "Sun Pharmaceutical Industries Ltd",
+    "sector": "Pharmaceuticals",
+    "aliases": [
+     "Sun Pharma",
+     "Sun Pharmaceutical"
+    ],
+    "listings": [
+     {
+      "symbol": "SUNPHARMA",
+      "valid_from": "1996-01-01",
+      "valid_to": null
+     }
+    ]
+   },
    {
     "instrument_id": "SYN-0001",
     "name": "Northwind Semiconductor Corp",
@@ -18918,5 +19011,744 @@
    "failed_at": "2026-03-14T00:00:00Z",
    "trace_id": "c0250e8cbaf2c8c6917dd749a03dae60"
   }
- ]
+ ],
+ "research": {
+  "RELIANCE": {
+   "schema_version": "1.0",
+   "event_id": "report_d6362cdc535ea35ddc6da9ce7ca28b42",
+   "trace_id": "6b24b4a4ce2b78fd7ccabcba0b1399bd",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "RELIANCE",
+    "instrument_id": "NSE-0001",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_7183ee8f7d5e8712e5457942ba3d210f",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": true,
+   "abstain_reason": "insufficient_evidence",
+   "business_snapshot": "Insufficient evidence.",
+   "bull_case": [],
+   "bear_case": [],
+   "quant_summary": "Insufficient evidence.",
+   "missing_information": [
+    "no events were found for this issuer in range"
+   ],
+   "uncertainty_rating": "high",
+   "tool_calls": 2,
+   "input_tokens": 0,
+   "output_tokens": 0,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "TCS": {
+   "schema_version": "1.0",
+   "event_id": "report_f2d70360e67aa369968dd756e27e5060",
+   "trace_id": "514b75a94df77998fb02648eb5358419",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "TCS",
+    "instrument_id": "NSE-0002",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_84dab1cbcdd2068f40625a5f263a9d7a",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": true,
+   "abstain_reason": "insufficient_evidence",
+   "business_snapshot": "Insufficient evidence.",
+   "bull_case": [],
+   "bear_case": [],
+   "quant_summary": "Insufficient evidence.",
+   "missing_information": [
+    "no events were found for this issuer in range"
+   ],
+   "uncertainty_rating": "high",
+   "tool_calls": 2,
+   "input_tokens": 0,
+   "output_tokens": 0,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "INFY": {
+   "schema_version": "1.0",
+   "event_id": "report_d9df30f88b8272b43146a5925ed2e54f",
+   "trace_id": "5fe7ef2d7df546bce8feee3c328bd72b",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "INFY",
+    "instrument_id": "NSE-0003",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_5a2b935e37f9fbc6c2bfdb377c1e8473",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": true,
+   "abstain_reason": "insufficient_evidence",
+   "business_snapshot": "Insufficient evidence.",
+   "bull_case": [],
+   "bear_case": [],
+   "quant_summary": "Insufficient evidence.",
+   "missing_information": [
+    "no events were found for this issuer in range"
+   ],
+   "uncertainty_rating": "high",
+   "tool_calls": 2,
+   "input_tokens": 0,
+   "output_tokens": 0,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "HDFCBANK": {
+   "schema_version": "1.0",
+   "event_id": "report_4d49a40d6146f2dfd5528a843c572b0b",
+   "trace_id": "22b5346917d870e8a917fdbbb844bde1",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "HDFCBANK",
+    "instrument_id": "NSE-0004",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_28da5b41307ceb1a845339062a5d21a3",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": true,
+   "abstain_reason": "insufficient_evidence",
+   "business_snapshot": "Insufficient evidence.",
+   "bull_case": [],
+   "bear_case": [],
+   "quant_summary": "Insufficient evidence.",
+   "missing_information": [
+    "no events were found for this issuer in range"
+   ],
+   "uncertainty_rating": "high",
+   "tool_calls": 2,
+   "input_tokens": 0,
+   "output_tokens": 0,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "ICICIBANK": {
+   "schema_version": "1.0",
+   "event_id": "report_72a2631a9ab21176e1eafd9b281ce44d",
+   "trace_id": "ada79cc4210c5d16fb2dfa4810a3f660",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "ICICIBANK",
+    "instrument_id": "NSE-0005",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_8207ef81f02f820d39aa907347dc4711",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": true,
+   "abstain_reason": "insufficient_evidence",
+   "business_snapshot": "Insufficient evidence.",
+   "bull_case": [],
+   "bear_case": [],
+   "quant_summary": "Insufficient evidence.",
+   "missing_information": [
+    "no events were found for this issuer in range"
+   ],
+   "uncertainty_rating": "high",
+   "tool_calls": 2,
+   "input_tokens": 0,
+   "output_tokens": 0,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "SUNPHARMA": {
+   "schema_version": "1.0",
+   "event_id": "report_8e9c85498317356ce2438623f705f574",
+   "trace_id": "ed5c3ec4243d54131ba23cb18a444774",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "SUNPHARMA",
+    "instrument_id": "NSE-0006",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_f273cdb97be96a0bce8cb88120c1128b",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": true,
+   "abstain_reason": "insufficient_evidence",
+   "business_snapshot": "Insufficient evidence.",
+   "bull_case": [],
+   "bear_case": [],
+   "quant_summary": "Insufficient evidence.",
+   "missing_information": [
+    "no events were found for this issuer in range"
+   ],
+   "uncertainty_rating": "high",
+   "tool_calls": 2,
+   "input_tokens": 0,
+   "output_tokens": 0,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "NWSC": {
+   "schema_version": "1.0",
+   "event_id": "report_4c780290e0b9137f6cd1a4bad54cceb6",
+   "trace_id": "8ff91a121ad5ac60307d045436529121",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "NWSC",
+    "instrument_id": "SYN-0001",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_42681be474766b6f9d1f236a4ad44aba",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": false,
+   "abstain_reason": null,
+   "business_snapshot": "Northwind Semiconductor Corp (NWSC) had 20 tracked news item(s) in the window, 11 of them scored by the sentiment baseline.",
+   "bull_case": [
+    {
+     "claim": "Northwind Semiconductor announces buyback as profit improves (signed sentiment +0.83).",
+     "evidence_id": "norm_6c1db925250ef4ed8043d368f4056bed",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Northwind Semiconductor beats estimates as data-center revenue grows (signed sentiment +0.75).",
+     "evidence_id": "norm_9142d5cadcf5c908419538d4213b1fb8",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Northwind Semiconductor tops estimates on strong data-center demand (signed sentiment +0.67).",
+     "evidence_id": "norm_e5e60b4395883df89d4260a72e506b3b",
+     "evidence_kind": "event"
+    }
+   ],
+   "bear_case": [
+    {
+     "claim": "Northwind Semiconductor cuts guidance citing data-center slowdown (signed sentiment -0.80).",
+     "evidence_id": "norm_b4b7902d2c1707201e9b59760bd0c6a7",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Northwind Semiconductor lowers guidance and warns on costs (signed sentiment -0.75).",
+     "evidence_id": "norm_9f0e35f654d66abf886e44581eb9a76a",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Northwind Semiconductor faces regulatory probe over disclosure practices (signed sentiment -0.67).",
+     "evidence_id": "norm_0817c9c984fffc43ba8a473ff7677247",
+     "evidence_kind": "event"
+    }
+   ],
+   "quant_summary": "Decayed-sentiment signal: negative at -0.60. Unvalidated, not a forecast.",
+   "missing_information": [
+    "Fundamentals and filings are not ingested yet (milestones M1 and M3); this brief covers news sentiment and an unvalidated heuristic signal only, not valuation or filing-backed facts."
+   ],
+   "uncertainty_rating": "low",
+   "tool_calls": 2,
+   "input_tokens": 844,
+   "output_tokens": 357,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "HLCB": {
+   "schema_version": "1.0",
+   "event_id": "report_215b0a56b23a0aba4e00f4d64e931d77",
+   "trace_id": "ea1445e1d44d85bee097436a5abc4ec7",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "HLCB",
+    "instrument_id": "SYN-0002",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_1185b7da953d767039588f18d8b474f7",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": false,
+   "abstain_reason": null,
+   "business_snapshot": "Halcyon Biotherapeutics Inc (HLCB) had 18 tracked news item(s) in the window, 11 of them scored by the sentiment baseline.",
+   "bull_case": [
+    {
+     "claim": "Halcyon Biotherapeutics wins regulatory approval for its lead therapy (signed sentiment +0.75).",
+     "evidence_id": "norm_f16f082303824a0dfe12b2c870fe6a87",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Halcyon Biotherapeutics secures strategic partnership to expand oncology business (signed sentiment +0.67).",
+     "evidence_id": "norm_b9c4eb00dc99eb33b519ab1e9125e812",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Halcyon Biotherapeutics launches its lead therapy ahead of schedule (signed sentiment +0.67).",
+     "evidence_id": "norm_2adf04f12f306a5c52baf0466764974e",
+     "evidence_kind": "event"
+    }
+   ],
+   "bear_case": [
+    {
+     "claim": "Halcyon Biotherapeutics cuts guidance citing oncology slowdown (signed sentiment -0.80).",
+     "evidence_id": "norm_1d8ad34e3d75736e0b06a722534e9cb1",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Halcyon Biotherapeutics cuts guidance citing oncology slowdown (signed sentiment -0.80).",
+     "evidence_id": "norm_934c83024c600cef79869d4036fa8d4e",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Halcyon Biotherapeutics plunges after regulator rejects lead therapy application (signed sentiment -0.80).",
+     "evidence_id": "norm_3be41bd93e31a05e1f0b3c5ca2fe535e",
+     "evidence_kind": "event"
+    }
+   ],
+   "quant_summary": "Decayed-sentiment signal: positive at +0.16. Unvalidated, not a forecast.",
+   "missing_information": [
+    "Fundamentals and filings are not ingested yet (milestones M1 and M3); this brief covers news sentiment and an unvalidated heuristic signal only, not valuation or filing-backed facts."
+   ],
+   "uncertainty_rating": "low",
+   "tool_calls": 2,
+   "input_tokens": 827,
+   "output_tokens": 364,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "MRFS": {
+   "schema_version": "1.0",
+   "event_id": "report_d65c2864c55addf56d673aeb5a52a0fa",
+   "trace_id": "10ff45a658e48f786ed78cf838b65e54",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "MRFS",
+    "instrument_id": "SYN-0003",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_cee57eaa3c597407b7c3355b1fe723d0",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": false,
+   "abstain_reason": null,
+   "business_snapshot": "Meridian Freight Systems Inc (MRFS) had 10 tracked news item(s) in the window, 6 of them scored by the sentiment baseline.",
+   "bull_case": [
+    {
+     "claim": "Meridian Freight Systems raises guidance after robust intermodal orders (signed sentiment +0.75).",
+     "evidence_id": "norm_e633aeb622e95dc5741d8c346d3b7cee",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Meridian Freight Systems raises guidance after robust intermodal orders (signed sentiment +0.75).",
+     "evidence_id": "norm_f1237a1b4718f9305e2fb8ac783115d9",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Meridian Freight Systems launches its routing platform ahead of schedule (signed sentiment +0.67).",
+     "evidence_id": "norm_5922b12f5a04499bb60c4314312411d7",
+     "evidence_kind": "event"
+    }
+   ],
+   "bear_case": [
+    {
+     "claim": "Meridian Freight Systems cuts guidance citing intermodal slowdown (signed sentiment -0.80).",
+     "evidence_id": "norm_d41e86089547f1d0a7d8a7338476511b",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Meridian Freight Systems recalls its routing platform after defect reports (signed sentiment -0.67).",
+     "evidence_id": "norm_7624e0b267b51b07d14497d274b5a17f",
+     "evidence_kind": "event"
+    }
+   ],
+   "quant_summary": "Decayed-sentiment signal: positive at +0.62. Unvalidated, not a forecast.",
+   "missing_information": [
+    "Fundamentals and filings are not ingested yet (milestones M1 and M3); this brief covers news sentiment and an unvalidated heuristic signal only, not valuation or filing-backed facts."
+   ],
+   "uncertainty_rating": "low",
+   "tool_calls": 2,
+   "input_tokens": 704,
+   "output_tokens": 317,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "APXR": {
+   "schema_version": "1.0",
+   "event_id": "report_a4bae4563847f23ca37f0609d07bf16c",
+   "trace_id": "bf491a94d75636f867f230e0d144405b",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "APXR",
+    "instrument_id": "SYN-0004",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_94335ef69199cfb371b6dfc5f262fb9d",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": false,
+   "abstain_reason": null,
+   "business_snapshot": "Apex Robotics Corp (APXR) had 20 tracked news item(s) in the window, 15 of them scored by the sentiment baseline.",
+   "bull_case": [
+    {
+     "claim": "Apex Robotics announces buyback as profit improves (signed sentiment +0.83).",
+     "evidence_id": "norm_911b259f1215315f01bdf86460b0fbc5",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Apex posts record revenue for the quarter (signed sentiment +0.75).",
+     "evidence_id": "norm_b089e760f9d8b8aee19ccb7af8b0bf8b",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Apex Robotics beats estimates as warehouse automation revenue grows (signed sentiment +0.75).",
+     "evidence_id": "norm_b8610b4d21c1ef2901b98669f3ce01f3",
+     "evidence_kind": "event"
+    }
+   ],
+   "bear_case": [
+    {
+     "claim": "Apex Robotics cuts guidance citing warehouse automation slowdown (signed sentiment -0.80).",
+     "evidence_id": "norm_b3a6fd3dfdf0a57ea5eb7e4cd0927341",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Apex Robotics misses estimates as warehouse automation revenue declines (signed sentiment -0.75).",
+     "evidence_id": "norm_7d076e6e106bd2420ec760722acfd926",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Apex Robotics lowers guidance and warns on costs (signed sentiment -0.75).",
+     "evidence_id": "norm_24f24d552639f1c8f8c306090e9fc648",
+     "evidence_kind": "event"
+    }
+   ],
+   "quant_summary": "Decayed-sentiment signal: positive at +0.45. Unvalidated, not a forecast.",
+   "missing_information": [
+    "Fundamentals and filings are not ingested yet (milestones M1 and M3); this brief covers news sentiment and an unvalidated heuristic signal only, not valuation or filing-backed facts."
+   ],
+   "uncertainty_rating": "low",
+   "tool_calls": 2,
+   "input_tokens": 822,
+   "output_tokens": 342,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "APXE": {
+   "schema_version": "1.0",
+   "event_id": "report_4491962641791267a0e65c1441e4ddb6",
+   "trace_id": "0e782166fc142e53c45e4be9204008ef",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "APXE",
+    "instrument_id": "SYN-0005",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_b26ea7deaf95ce269877cca6154f01b4",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": false,
+   "abstain_reason": null,
+   "business_snapshot": "Apex Energy Partners LP (APXE) had 16 tracked news item(s) in the window, 12 of them scored by the sentiment baseline.",
+   "bull_case": [
+    {
+     "claim": "Apex Energy Partners announces buyback as profit improves (signed sentiment +0.83).",
+     "evidence_id": "norm_c2658bca186bdfc2b0d63d2d2c15e39e",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Apex Energy Partners posts record revenue for the quarter (signed sentiment +0.75).",
+     "evidence_id": "norm_68dbe7605b448b9b6631c0be9c11dc05",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Apex posts record revenue for the quarter (signed sentiment +0.75).",
+     "evidence_id": "norm_b089e760f9d8b8aee19ccb7af8b0bf8b",
+     "evidence_kind": "event"
+    }
+   ],
+   "bear_case": [
+    {
+     "claim": "Apex Energy Partners cuts guidance citing midstream slowdown (signed sentiment -0.80).",
+     "evidence_id": "norm_f3dbd593574ffaf4f9ddd1fa3b648a6d",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Apex Energy Partners lowers guidance and warns on costs (signed sentiment -0.75).",
+     "evidence_id": "norm_8605c24c9bdd679b09ecc89c5b940146",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Apex Energy Partners lowers guidance and warns on costs (signed sentiment -0.75).",
+     "evidence_id": "norm_f602a873fe68d57351f02d3e5f7767f4",
+     "evidence_kind": "event"
+    }
+   ],
+   "quant_summary": "Decayed-sentiment signal: neutral at -0.09. Unvalidated, not a forecast.",
+   "missing_information": [
+    "Fundamentals and filings are not ingested yet (milestones M1 and M3); this brief covers news sentiment and an unvalidated heuristic signal only, not valuation or filing-backed facts."
+   ],
+   "uncertainty_rating": "low",
+   "tool_calls": 2,
+   "input_tokens": 779,
+   "output_tokens": 339,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "CBHB": {
+   "schema_version": "1.0",
+   "event_id": "report_2af3a88aef8e7302177f49124c325fcf",
+   "trace_id": "54382363f63c2f250f7e3d581a9663a3",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "CBHB",
+    "instrument_id": "SYN-0006",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_b7981e655a3a851089572c2c98cc01bb",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": false,
+   "abstain_reason": null,
+   "business_snapshot": "Cobalt Harbor Bancorp (CBHB) had 26 tracked news item(s) in the window, 19 of them scored by the sentiment baseline.",
+   "bull_case": [
+    {
+     "claim": "Cobalt Harbor Bank raises guidance after robust commercial lending orders (signed sentiment +0.75).",
+     "evidence_id": "norm_b990fe2f605af4d6217ef7e265a4e20f",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Cobalt Harbor Bank wins regulatory approval for its digital banking app (signed sentiment +0.75).",
+     "evidence_id": "norm_c6812095b11b8ea9f040d3ca1f07d337",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Cobalt Harbor Bank raises guidance after robust commercial lending orders (signed sentiment +0.75).",
+     "evidence_id": "norm_91d74d2e108bc5e226aef02da4a49978",
+     "evidence_kind": "event"
+    }
+   ],
+   "bear_case": [
+    {
+     "claim": "Cobalt Harbor Bank reports quarterly loss on weak commercial lending demand (signed sentiment -0.80).",
+     "evidence_id": "norm_d18bddcfaa4d05db8f178304f66fcdb9",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Cobalt Harbor Bank lowers guidance and warns on costs (signed sentiment -0.75).",
+     "evidence_id": "norm_95a63d18deb25f2c1e6972159537c2d1",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Cobalt Harbor Bank chief executive resigns amid board investigation (signed sentiment -0.67).",
+     "evidence_id": "norm_2d9659d077e632995164adcfaa93464a",
+     "evidence_kind": "event"
+    }
+   ],
+   "quant_summary": "Decayed-sentiment signal: positive at +0.27. Unvalidated, not a forecast.",
+   "missing_information": [
+    "Fundamentals and filings are not ingested yet (milestones M1 and M3); this brief covers news sentiment and an unvalidated heuristic signal only, not valuation or filing-backed facts."
+   ],
+   "uncertainty_rating": "low",
+   "tool_calls": 2,
+   "input_tokens": 902,
+   "output_tokens": 361,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "LMGU": {
+   "schema_version": "1.0",
+   "event_id": "report_3f513a66b128c1dcbecc49ef8ee50739",
+   "trace_id": "75f8438c894259fbcd90df31e8900c42",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "LMGU",
+    "instrument_id": "SYN-0007",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_72528644a3326593a25e07c0307ad7e9",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": false,
+   "abstain_reason": null,
+   "business_snapshot": "Lumen Grid Utilities Co (LMGU) had 14 tracked news item(s) in the window, 8 of them scored by the sentiment baseline.",
+   "bull_case": [
+    {
+     "claim": "Lumen Grid Utilities posts record revenue for the quarter (signed sentiment +0.75).",
+     "evidence_id": "norm_77c5af6c273ea5df7a4840fe3291d0a5",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Lumen Grid Utilities beats estimates as transmission revenue grows (signed sentiment +0.75).",
+     "evidence_id": "norm_2ee605451088af91e7ef4d77065df981",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Lumen Grid Utilities wins regulatory approval for its grid storage project (signed sentiment +0.75).",
+     "evidence_id": "norm_570da907783ee274e5867e008cd66b65",
+     "evidence_kind": "event"
+    }
+   ],
+   "bear_case": [
+    {
+     "claim": "Lumen Grid Utilities cuts guidance citing transmission slowdown (signed sentiment -0.80).",
+     "evidence_id": "norm_c00b45820bfc559c252a0f59864e72ed",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Lumen Grid Utilities misses estimates as transmission revenue declines (signed sentiment -0.75).",
+     "evidence_id": "norm_51d4ac7efef0b759123d79e2fc080a7b",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Lumen Grid Utilities delays its grid storage project launch after testing setback (signed sentiment -0.67).",
+     "evidence_id": "norm_c1fa365e071338501e6aa818b94b18a6",
+     "evidence_kind": "event"
+    }
+   ],
+   "quant_summary": "Decayed-sentiment signal: positive at +0.75. Unvalidated, not a forecast.",
+   "missing_information": [
+    "Fundamentals and filings are not ingested yet (milestones M1 and M3); this brief covers news sentiment and an unvalidated heuristic signal only, not valuation or filing-backed facts."
+   ],
+   "uncertainty_rating": "low",
+   "tool_calls": 2,
+   "input_tokens": 779,
+   "output_tokens": 361,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  },
+  "VRCS": {
+   "schema_version": "1.0",
+   "event_id": "report_9991aa892b521048d1ec241d4c1b797a",
+   "trace_id": "f729be44e96cff1d8d6e0be89e14a63f",
+   "available_at": "2026-03-14T00:00:00Z",
+   "instrument": {
+    "symbol": "VRCS",
+    "instrument_id": "SYN-0008",
+    "confidence": 1.0
+   },
+   "as_of": "2026-03-14T00:00:00Z",
+   "job_id": "agentjob_b94d8b9944875e1c940055bcff5cc11b",
+   "model_id": "mock",
+   "model_version": "mock-template-v1",
+   "prompt_version": "research-agent-prompts-v1",
+   "validation_status": "unvalidated_agent_output",
+   "research_only": true,
+   "abstained": false,
+   "abstain_reason": null,
+   "business_snapshot": "Vireo Cloud Software Inc (VRCS) had 17 tracked news item(s) in the window, 13 of them scored by the sentiment baseline.",
+   "bull_case": [
+    {
+     "claim": "Vireo Cloud Software raises guidance after robust subscription orders (signed sentiment +0.75).",
+     "evidence_id": "norm_183c70a72917df963fb112ffec33eb3b",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Vireo Cloud Software raises outlook on strong subscription growth (signed sentiment +0.75).",
+     "evidence_id": "norm_9d6c34a4d90e59d63d398f5c87f693f9",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Vireo Cloud Software wins regulatory approval for its analytics suite (signed sentiment +0.75).",
+     "evidence_id": "norm_1afbdec3ac826da5506af645612c60dc",
+     "evidence_kind": "event"
+    }
+   ],
+   "bear_case": [
+    {
+     "claim": "Vireo Cloud Software cuts guidance citing subscription slowdown (signed sentiment -0.80).",
+     "evidence_id": "norm_8e53249a5f9e9b182a89f29682664201",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Vireo Cloud Software cuts guidance citing subscription slowdown (signed sentiment -0.80).",
+     "evidence_id": "norm_b2987523184a03b0d46ab51049e66e72",
+     "evidence_kind": "event"
+    },
+    {
+     "claim": "Vireo Cloud Software lowers guidance and warns on costs (signed sentiment -0.75).",
+     "evidence_id": "norm_25269b0bb0db18cd5d9efb0044727962",
+     "evidence_kind": "event"
+    }
+   ],
+   "quant_summary": "Decayed-sentiment signal: neutral at +0.06. Unvalidated, not a forecast.",
+   "missing_information": [
+    "Fundamentals and filings are not ingested yet (milestones M1 and M3); this brief covers news sentiment and an unvalidated heuristic signal only, not valuation or filing-backed facts."
+   ],
+   "uncertainty_rating": "low",
+   "tool_calls": 2,
+   "input_tokens": 800,
+   "output_tokens": 354,
+   "cost_usd": 0.0,
+   "latency_ms": null
+  }
+ },
+ "monitor": {
+  "generated_at": "2026-03-14T00:00:00Z",
+  "status": "warning",
+  "headline": "Records are being quarantined.",
+  "summary": "Records are being quarantined: 2 quarantined record(s)",
+  "findings": [
+   {
+    "severity": "warning",
+    "title": "Records are being quarantined",
+    "detail": "2 quarantined record(s)",
+    "metric": "dead_letters",
+    "value": 2.0
+   }
+  ],
+  "model_id": "mock",
+  "model_version": "mock-template-v1",
+  "prompt_version": "research-agent-prompts-v1",
+  "narration_degraded": false,
+  "tool_calls": 1,
+  "input_tokens": 278,
+  "output_tokens": 28,
+  "cost_usd": 0.0,
+  "latency_ms": null
+ }
 }

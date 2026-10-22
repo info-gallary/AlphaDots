@@ -1,7 +1,7 @@
 {
   "version": "synthetic-2026.1",
-  "license": "CC0-1.0 (synthetic; every issuer, ticker and identifier here is invented)",
-  "note": "Fictional issuers for deterministic tests and demos. Any resemblance to a real company or ticker is coincidental and must not be relied upon.",
+  "license": "Mixed. SYN- entries: CC0-1.0 (synthetic; every issuer, ticker and identifier invented). NSE- entries: real, publicly listed Indian issuers and their real NSE symbols, used as public instrument-identifier reference data only.",
+  "note": "SYN- issuers are fictional, for deterministic tests and demos; any resemblance to a real company is coincidental. NSE- issuers are real, NSE-listed Indian companies, included ONLY as an instrument universe (symbol <-> instrument_id resolution) - no news item, headline or event anywhere in this fixture set is generated about an NSE- issuer, and none should be added without a real, licensed/public source per docs/data-licenses.md. `valid_from` on NSE- listings is a round, intentionally-approximate date (year-level confidence), not a verified exact listing date.",
   "instruments": [
     {
       "instrument_id": "SYN-0001",
@@ -61,6 +61,48 @@
         {"symbol": "VIRE", "valid_from": "2020-10-08", "valid_to": "2026-03-08"},
         {"symbol": "VRCS", "valid_from": "2026-03-09", "valid_to": null}
       ]
+    },
+    {
+      "instrument_id": "NSE-0001",
+      "name": "Reliance Industries Ltd",
+      "sector": "Energy / Conglomerate",
+      "aliases": ["Reliance Industries", "Reliance"],
+      "listings": [{"symbol": "RELIANCE", "valid_from": "1996-01-01", "valid_to": null}]
+    },
+    {
+      "instrument_id": "NSE-0002",
+      "name": "Tata Consultancy Services Ltd",
+      "sector": "IT Services",
+      "aliases": ["Tata Consultancy Services", "TCS"],
+      "listings": [{"symbol": "TCS", "valid_from": "2004-08-25", "valid_to": null}]
+    },
+    {
+      "instrument_id": "NSE-0003",
+      "name": "Infosys Ltd",
+      "sector": "IT Services",
+      "aliases": ["Infosys"],
+      "listings": [{"symbol": "INFY", "valid_from": "1996-01-01", "valid_to": null}]
+    },
+    {
+      "instrument_id": "NSE-0004",
+      "name": "HDFC Bank Ltd",
+      "sector": "Banks",
+      "aliases": ["HDFC Bank"],
+      "listings": [{"symbol": "HDFCBANK", "valid_from": "1996-01-01", "valid_to": null}]
+    },
+    {
+      "instrument_id": "NSE-0005",
+      "name": "ICICI Bank Ltd",
+      "sector": "Banks",
+      "aliases": ["ICICI Bank"],
+      "listings": [{"symbol": "ICICIBANK", "valid_from": "1998-01-01", "valid_to": null}]
+    },
+    {
+      "instrument_id": "NSE-0006",
+      "name": "Sun Pharmaceutical Industries Ltd",
+      "sector": "Pharmaceuticals",
+      "aliases": ["Sun Pharma", "Sun Pharmaceutical"],
+      "listings": [{"symbol": "SUNPHARMA", "valid_from": "1996-01-01", "valid_to": null}]
     }
   ]
 }

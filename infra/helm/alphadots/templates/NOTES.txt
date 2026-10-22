@@ -1,0 +1,31 @@
+AlphaDots deployed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+Topics are created by a post-install/post-upgrade Job hook ({{ include "alphadots.fullname" . }}-redpanda-topics)
+-- check its status with:
+  kubectl get jobs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=redpanda-topics
+
+Check every pod is Ready:
+  kubectl get pods -n {{ .Release.Namespace }} -w
+
+Reach the API (NodePort {{ .Values.api.nodePort }}):
+  curl http://localhost:{{ .Values.api.nodePort }}/health/ready
+  (via k3d's port mapping, see infra/k3d/cluster-config.yaml, that's usually also forwarded to a fixed host port -- check `k3d cluster list`/the port mapping you created the cluster with)
+
+Reach the dashboard (NodePort {{ .Values.web.nodePort }}):
+  curl http://localhost:{{ .Values.web.nodePort }}/api/health/live
+
+Trigger a replay (the ingestion Job starts suspended):
+  kubectl patch job {{ include "alphadots.fullname" . }}-ingestion-replay -n {{ .Release.Namespace }} --type merge -p '{"spec":{"suspend":false}}'
+
+research-agent has no external port by design -- see docs/threat-model.md.
+
+NetworkPolicy objects are created (`networkPolicy.enabled: {{ .Values.networkPolicy.enabled }}`) but k3d's default CNI
+(flannel) does not enforce them -- see templates/networkpolicy.yaml's comment before treating this as a verified
+security boundary.
+
+Roll back a bad release:
+  helm history {{ .Release.Name }} -n {{ .Release.Namespace }}
+  helm rollback {{ .Release.Name }} <revision> -n {{ .Release.Namespace }}
+
+Tear down:
+  helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}

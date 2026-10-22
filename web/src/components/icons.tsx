@@ -62,6 +62,30 @@ export function SystemGlyph(props: GlyphProps) {
   );
 }
 
+export function OverviewGlyph(props: GlyphProps) {
+  return (
+    <Glyph {...props}>
+      {[
+        [2.5, 9, 4.5],
+        [6.75, 5, 8.5],
+        [11, 7, 6.5],
+      ].map(([x, y, h]) => (
+        <rect key={x} x={x} y={y} width={2.6} height={h} rx={1} fill="currentColor" />
+      ))}
+    </Glyph>
+  );
+}
+
+export function ResearchGlyph(props: GlyphProps) {
+  return (
+    <Glyph {...props}>
+      <circle cx={7} cy={7} r={4.2} stroke="currentColor" strokeWidth={1.5} />
+      <path d="m10.2 10.2 3.6 3.6" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
+      <circle cx={7} cy={7} r={1.4} fill="currentColor" />
+    </Glyph>
+  );
+}
+
 export function WarningGlyph(props: GlyphProps) {
   return (
     <Glyph className="status-glyph" {...props}>

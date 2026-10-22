@@ -1,6 +1,6 @@
 /** Shape of `src/data/snapshot.json`, written by `scripts/export_snapshot.py`. */
 
-import type { DeadLetter, EventItem, FeedMode, Signal } from "../lib/types";
+import type { DeadLetter, EventItem, FeedMode, MonitorSummary, ResearchReport, Signal } from "../lib/types";
 
 export interface SnapshotListing {
   symbol: string;
@@ -29,4 +29,12 @@ export interface Snapshot {
   /** Signal payloads exactly as published on `signals.generated.v1`, oldest first. */
   signals: Signal[];
   dead_letters: DeadLetter[];
+  /**
+   * One research brief per issuer, keyed by the symbol it traded as at export time: real
+   * runs of the research graph (mock model) against this snapshot. `latency_ms` is null
+   * because a timing would make the file differ on every export.
+   */
+  research?: Record<string, ResearchReport>;
+  /** One run of the monitor graph at export time; `latency_ms` null for the same reason. */
+  monitor?: MonitorSummary;
 }

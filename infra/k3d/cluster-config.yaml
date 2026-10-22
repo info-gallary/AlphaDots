@@ -1,0 +1,63 @@
+# Local k3d cluster for `make k8s-up`. One server, zero agents: this is a development
+# target, not a scaling demonstration (the chart's HPA is disabled by default for the
+# same reason - see infra/helm/alphadots/values.yaml). Traefik is disabled because
+# services are reached via NodePort (api) and the dashboard's own NodePort, not through
+# k3d's bundled ingress.
+#
+# No `ports:` field and no load balancer here, by necessity, not preference: k3d always
+# routes host<->container port mappings declared in `ports:` through a `serverlb` node
+# (confirmed empirically -- `--no-lb` combined with a `ports:` entry fails outright with
+# "port-mapping of type 'proxy' specified, but loadbalancer is disabled"), and that LB
+# node's image, `ghcr.io/k3d-io/k3d-proxy`, cannot be pulled on this machine: GHCR blob
+# fetches through pkg-containers.githubusercontent.com fail with a deterministic EOF
+# here (reproduced twice, both via `k3d cluster create` and a direct `docker pull`) --
+# the same registry-reachability problem already on file for this dev machine (see
+# memory: "ghcr.io blobs unreachable, use Docker Hub"). `rancher/k3s` above is pulled
+# from docker.io and is unaffected.
+#
+# Reach the cluster with `kubectl port-forward` instead (`make k8s-smoke` does this for
+# you): `kubectl port-forward svc/alphadots-api 18080:8000 -n alphadots` /
+# `kubectl port-forward svc/alphadots-web 13000:3000 -n alphadots`. If a future machine
+# *can* reach ghcr.io, add back `ports:` entries (`30080:30080`/`30300:30300` -> service
+# NodePorts) and drop `--no-lb` from the `k3d cluster create` invocation to get direct
+# host-port access without port-forwarding.
+#
+# KNOWN LIMITATION ON THIS MACHINE, BEYOND THE LB: `k3d cluster create` also spins up a
+# short-lived "tools node" from `ghcr.io/k3d-io/k3d-tools` before it creates the server
+# node at all, for every invocation, regardless of `--no-lb`/`ports:`/image-import usage.
+# That pull hits the same unreachable-ghcr.io wall and retries indefinitely (observed:
+# no server-node progress logged after 30+ seconds of repeated "Pulling image
+# 'ghcr.io/k3d-io/k3d-tools:5.9.0'"). `rancher/k3s` itself pulls fine from docker.io, so
+# the k3s node image is not the blocker -- the tools node is. This chart, the Terraform
+# modules, and `helm lint`/`helm template` have all been validated for real; an actual
+# `k3d cluster create` completing on *this* machine has not, and is not expected to
+# until it can reach ghcr.io (a machine-specific network restriction, not a bug in this
+# config -- see memory `dev-environment-quirks`). Do not read a future clean `k8s-up`
+# run on a different machine as evidence this was broken; it is this network path that
+# is broken, not the chart or the cluster config.
+#
+# The fixture corpus is mounted read-only into the node at /fixtures, matching the
+# hostPath volume templates/deployment.yaml's workers mount from - but NOT via a
+# `volumes:` entry here. k3d's config-file `volumes` field passes its source straight to
+# the Docker Engine API without resolving `.`/`..` the way a shell or `docker compose`
+# would, so a relative path here is interpreted as an (invalid) named-volume name, not a
+# host directory. `scripts/tasks.py`'s `k8s_up` instead passes the resolved absolute
+# path via `k3d cluster create --volume <abs-path>:/fixtures@server:0`, which k3d's CLI
+# flag parsing does handle correctly, and which also keeps this file portable across
+# machines instead of hardcoding one developer's absolute path into a committed config.
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: alphadots-dev
+servers: 1
+agents: 0
+image: rancher/k3s:v1.35.5-k3s1
+options:
+  k3d:
+    wait: true
+    timeout: "120s"
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:0

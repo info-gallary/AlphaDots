@@ -242,3 +242,95 @@ export interface DeadLettersResponse {
 export interface ApiErrorBody {
   error: { code: string; message: string; trace_id: string; details: unknown };
 }
+
+/* ------------------------------------------------------------ research agent */
+
+export interface ResearchClaim {
+  claim: string;
+  evidence_id: string;
+  evidence_kind: "event" | "signal";
+}
+
+export interface ResearchReport {
+  event_id: string;
+  trace_id: string;
+  available_at: string;
+  instrument: InstrumentRef;
+  as_of: string;
+  job_id: string;
+  model_id: string;
+  model_version: string;
+  prompt_version: string;
+  validation_status: string;
+  research_only: true;
+  abstained: boolean;
+  abstain_reason: string | null;
+  business_snapshot: string;
+  bull_case: ResearchClaim[];
+  bear_case: ResearchClaim[];
+  quant_summary: string;
+  missing_information: string[];
+  uncertainty_rating: "low" | "medium" | "high";
+  tool_calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  /** Null when no provider rate is configured: "not estimated", not "free". */
+  cost_usd: number | null;
+  /** Null for briefs recorded into a static snapshot, where no timing is kept. */
+  latency_ms: number | null;
+}
+
+export type JobStatus = "pending" | "running" | "succeeded" | "failed";
+
+export interface ResearchJob {
+  job_id: string;
+  symbol: string;
+  status: JobStatus;
+  as_of: string;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  report: ResearchReport | null;
+  error: string | null;
+}
+
+export interface ResearchJobResponse {
+  data: ResearchJob;
+  meta: Meta;
+}
+
+export interface ResearchBriefResponse {
+  data: ResearchReport | null;
+  meta: Meta;
+}
+
+export type Severity = "ok" | "warning" | "critical";
+
+export interface MonitorFinding {
+  severity: Severity;
+  title: string;
+  detail: string;
+  metric: string;
+  value: number;
+}
+
+export interface MonitorSummary {
+  generated_at: string;
+  status: Severity;
+  headline: string;
+  summary: string;
+  findings: MonitorFinding[];
+  model_id: string;
+  model_version: string;
+  narration_degraded: boolean;
+  tool_calls: number;
+  cost_usd: number | null;
+  /** Null when recorded into a static snapshot. */
+  latency_ms: number | null;
+}
+
+export interface MonitorResponse {
+  data: MonitorSummary;
+  cached: boolean;
+  meta: Meta;
+}

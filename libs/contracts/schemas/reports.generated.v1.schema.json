@@ -1,0 +1,267 @@
+{
+  "$defs": {
+    "Citation": {
+      "description": "One claim, traced to one piece of stored evidence.",
+      "properties": {
+        "claim": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Claim",
+          "type": "string"
+        },
+        "evidence_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "evidence_kind": {
+          "enum": [
+            "event",
+            "signal"
+          ],
+          "title": "Evidence Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "claim",
+        "evidence_id",
+        "evidence_kind"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "InstrumentRef": {
+      "description": "A resolved link between an event and a tradable instrument.\n\n``instrument_id`` is the stable identifier; ``symbol`` is the ticker that was effective\nat the event's publication time and may be reused by a different issuer later.",
+      "properties": {
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "instrument_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Instrument Id",
+          "type": "string"
+        },
+        "symbol": {
+          "maxLength": 16,
+          "minLength": 1,
+          "title": "Symbol",
+          "type": "string"
+        }
+      },
+      "required": [
+        "symbol",
+        "instrument_id",
+        "confidence"
+      ],
+      "title": "InstrumentRef",
+      "type": "object"
+    },
+    "ReportAbstainReason": {
+      "enum": [
+        "insufficient_evidence",
+        "agent_output_invalid",
+        "tool_budget_exceeded",
+        "cost_bound_exceeded",
+        "provider_unavailable"
+      ],
+      "title": "ReportAbstainReason",
+      "type": "string"
+    },
+    "ReportValidationStatus": {
+      "description": "How much the report's narration has been checked. One rung today: the verifier\nconfirms every citation resolves to real evidence. Nothing here validates that the\nnarration itself is a good equity thesis \u2014 that is the reader's job.",
+      "enum": [
+        "unvalidated_agent_output"
+      ],
+      "title": "ReportValidationStatus",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "abstain_reason": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReportAbstainReason"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "abstained": {
+      "title": "Abstained",
+      "type": "boolean"
+    },
+    "as_of": {
+      "description": "Decision time the brief was written for.",
+      "format": "date-time",
+      "title": "As Of",
+      "type": "string"
+    },
+    "available_at": {
+      "description": "Earliest time a consumer could realistically have used this message. Every point-in-time filter compares against this field.",
+      "format": "date-time",
+      "title": "Available At",
+      "type": "string"
+    },
+    "bear_case": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Citation"
+      },
+      "title": "Bear Case",
+      "type": "array"
+    },
+    "bull_case": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Citation"
+      },
+      "title": "Bull Case",
+      "type": "array"
+    },
+    "business_snapshot": {
+      "maxLength": 1000,
+      "title": "Business Snapshot",
+      "type": "string"
+    },
+    "cost_usd": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Null means the configured provider has no priced rate; show as 'not estimated', never as $0.",
+      "title": "Cost Usd"
+    },
+    "event_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Event Id",
+      "type": "string"
+    },
+    "input_tokens": {
+      "minimum": 0,
+      "title": "Input Tokens",
+      "type": "integer"
+    },
+    "instrument": {
+      "$ref": "#/$defs/InstrumentRef"
+    },
+    "job_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Job Id",
+      "type": "string"
+    },
+    "latency_ms": {
+      "minimum": 0,
+      "title": "Latency Ms",
+      "type": "number"
+    },
+    "missing_information": {
+      "default": [],
+      "description": "What this brief could not speak to, stated plainly rather than guessed.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Information",
+      "type": "array"
+    },
+    "model_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Model Id",
+      "type": "string"
+    },
+    "model_version": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Model Version",
+      "type": "string"
+    },
+    "output_tokens": {
+      "minimum": 0,
+      "title": "Output Tokens",
+      "type": "integer"
+    },
+    "prompt_version": {
+      "maxLength": 32,
+      "minLength": 1,
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "quant_summary": {
+      "maxLength": 500,
+      "title": "Quant Summary",
+      "type": "string"
+    },
+    "research_only": {
+      "const": true,
+      "default": true,
+      "title": "Research Only",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^1\\.\\d+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "tool_calls": {
+      "minimum": 0,
+      "title": "Tool Calls",
+      "type": "integer"
+    },
+    "trace_id": {
+      "pattern": "^[0-9a-f]{32}$",
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "uncertainty_rating": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Uncertainty Rating",
+      "type": "string"
+    },
+    "validation_status": {
+      "$ref": "#/$defs/ReportValidationStatus"
+    }
+  },
+  "required": [
+    "event_id",
+    "trace_id",
+    "available_at",
+    "instrument",
+    "as_of",
+    "job_id",
+    "model_id",
+    "model_version",
+    "prompt_version",
+    "validation_status",
+    "abstained",
+    "business_snapshot",
+    "quant_summary",
+    "uncertainty_rating",
+    "tool_calls",
+    "input_tokens",
+    "output_tokens",
+    "latency_ms"
+  ],
+  "title": "ReportGeneratedV1",
+  "type": "object"
+}

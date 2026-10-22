@@ -1,0 +1,14 @@
+apiVersion: v2
+name: alphadots
+description: >-
+  AlphaDots local/reference Kubernetes deployment: Redpanda, PostgreSQL, the four
+  pipeline services, the bounded research agent, and the dashboard. Sized for a local
+  k3d cluster (see ../../k3d/cluster-config.yaml), not a production HA deployment --
+  stateful components run as single-replica StatefulSets here, same as in Docker Compose.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - alphadots
+  - market-sentiment
+  - research-only

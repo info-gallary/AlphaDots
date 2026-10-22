@@ -22,6 +22,90 @@
     "instruments": [
      {
       "instrument": {
+       "instrument_id": "NSE-0001",
+       "symbol": "RELIANCE",
+       "name": "Reliance Industries Ltd",
+       "sector": "Energy / Conglomerate",
+       "all_symbols": [
+        "RELIANCE"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0002",
+       "symbol": "TCS",
+       "name": "Tata Consultancy Services Ltd",
+       "sector": "IT Services",
+       "all_symbols": [
+        "TCS"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0003",
+       "symbol": "INFY",
+       "name": "Infosys Ltd",
+       "sector": "IT Services",
+       "all_symbols": [
+        "INFY"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0004",
+       "symbol": "HDFCBANK",
+       "name": "HDFC Bank Ltd",
+       "sector": "Banks",
+       "all_symbols": [
+        "HDFCBANK"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0005",
+       "symbol": "ICICIBANK",
+       "name": "ICICI Bank Ltd",
+       "sector": "Banks",
+       "all_symbols": [
+        "ICICIBANK"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0006",
+       "symbol": "SUNPHARMA",
+       "name": "Sun Pharmaceutical Industries Ltd",
+       "sector": "Pharmaceuticals",
+       "all_symbols": [
+        "SUNPHARMA"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
        "instrument_id": "SYN-0001",
        "symbol": "NWSC",
        "name": "Northwind Semiconductor Corp",
@@ -1506,6 +1590,90 @@
     "instruments": [
      {
       "instrument": {
+       "instrument_id": "NSE-0001",
+       "symbol": "RELIANCE",
+       "name": "Reliance Industries Ltd",
+       "sector": "Energy / Conglomerate",
+       "all_symbols": [
+        "RELIANCE"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0002",
+       "symbol": "TCS",
+       "name": "Tata Consultancy Services Ltd",
+       "sector": "IT Services",
+       "all_symbols": [
+        "TCS"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0003",
+       "symbol": "INFY",
+       "name": "Infosys Ltd",
+       "sector": "IT Services",
+       "all_symbols": [
+        "INFY"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0004",
+       "symbol": "HDFCBANK",
+       "name": "HDFC Bank Ltd",
+       "sector": "Banks",
+       "all_symbols": [
+        "HDFCBANK"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0005",
+       "symbol": "ICICIBANK",
+       "name": "ICICI Bank Ltd",
+       "sector": "Banks",
+       "all_symbols": [
+        "ICICIBANK"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0006",
+       "symbol": "SUNPHARMA",
+       "name": "Sun Pharmaceutical Industries Ltd",
+       "sector": "Pharmaceuticals",
+       "all_symbols": [
+        "SUNPHARMA"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
        "instrument_id": "SYN-0001",
        "symbol": "NWSC",
        "name": "Northwind Semiconductor Corp",
@@ -1647,6 +1815,90 @@
      "dead_letters": 2
     },
     "instruments": [
+     {
+      "instrument": {
+       "instrument_id": "NSE-0001",
+       "symbol": "RELIANCE",
+       "name": "Reliance Industries Ltd",
+       "sector": "Energy / Conglomerate",
+       "all_symbols": [
+        "RELIANCE"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0002",
+       "symbol": "TCS",
+       "name": "Tata Consultancy Services Ltd",
+       "sector": "IT Services",
+       "all_symbols": [
+        "TCS"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0003",
+       "symbol": "INFY",
+       "name": "Infosys Ltd",
+       "sector": "IT Services",
+       "all_symbols": [
+        "INFY"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0004",
+       "symbol": "HDFCBANK",
+       "name": "HDFC Bank Ltd",
+       "sector": "Banks",
+       "all_symbols": [
+        "HDFCBANK"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0005",
+       "symbol": "ICICIBANK",
+       "name": "ICICI Bank Ltd",
+       "sector": "Banks",
+       "all_symbols": [
+        "ICICIBANK"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
+     {
+      "instrument": {
+       "instrument_id": "NSE-0006",
+       "symbol": "SUNPHARMA",
+       "name": "Sun Pharmaceutical Industries Ltd",
+       "sector": "Pharmaceuticals",
+       "all_symbols": [
+        "SUNPHARMA"
+       ]
+      },
+      "event_count": 0,
+      "latest_signal": null,
+      "score_history": []
+     },
      {
       "instrument": {
        "instrument_id": "SYN-0001",
@@ -20867,6 +21119,60 @@
    "body": {
     "data": [
      {
+      "instrument_id": "NSE-0001",
+      "symbol": "RELIANCE",
+      "name": "Reliance Industries Ltd",
+      "sector": "Energy / Conglomerate",
+      "all_symbols": [
+       "RELIANCE"
+      ]
+     },
+     {
+      "instrument_id": "NSE-0002",
+      "symbol": "TCS",
+      "name": "Tata Consultancy Services Ltd",
+      "sector": "IT Services",
+      "all_symbols": [
+       "TCS"
+      ]
+     },
+     {
+      "instrument_id": "NSE-0003",
+      "symbol": "INFY",
+      "name": "Infosys Ltd",
+      "sector": "IT Services",
+      "all_symbols": [
+       "INFY"
+      ]
+     },
+     {
+      "instrument_id": "NSE-0004",
+      "symbol": "HDFCBANK",
+      "name": "HDFC Bank Ltd",
+      "sector": "Banks",
+      "all_symbols": [
+       "HDFCBANK"
+      ]
+     },
+     {
+      "instrument_id": "NSE-0005",
+      "symbol": "ICICIBANK",
+      "name": "ICICI Bank Ltd",
+      "sector": "Banks",
+      "all_symbols": [
+       "ICICIBANK"
+      ]
+     },
+     {
+      "instrument_id": "NSE-0006",
+      "symbol": "SUNPHARMA",
+      "name": "Sun Pharmaceutical Industries Ltd",
+      "sector": "Pharmaceuticals",
+      "all_symbols": [
+       "SUNPHARMA"
+      ]
+     },
+     {
       "instrument_id": "SYN-0001",
       "symbol": "NWSC",
       "name": "Northwind Semiconductor Corp",
@@ -20941,7 +21247,7 @@
      }
     ],
     "reference_version": "synthetic-2026.1",
-    "reference_license": "CC0-1.0 (synthetic; every issuer, ticker and identifier here is invented)",
+    "reference_license": "Mixed. SYN- entries: CC0-1.0 (synthetic; every issuer, ticker and identifier invented). NSE- entries: real, publicly listed Indian issuers and their real NSE symbols, used as public instrument-identifier reference data only.",
     "meta": {
      "schema_version": "1.0",
      "as_of": null,
@@ -20976,7 +21282,7 @@
      }
     ],
     "reference_version": "synthetic-2026.1",
-    "reference_license": "CC0-1.0 (synthetic; every issuer, ticker and identifier here is invented)",
+    "reference_license": "Mixed. SYN- entries: CC0-1.0 (synthetic; every issuer, ticker and identifier invented). NSE- entries: real, publicly listed Indian issuers and their real NSE symbols, used as public instrument-identifier reference data only.",
     "meta": {
      "schema_version": "1.0",
      "as_of": null,
@@ -20991,6 +21297,60 @@
    "status": 200,
    "body": {
     "data": [
+     {
+      "instrument_id": "NSE-0001",
+      "symbol": "RELIANCE",
+      "name": "Reliance Industries Ltd",
+      "sector": "Energy / Conglomerate",
+      "all_symbols": [
+       "RELIANCE"
+      ]
+     },
+     {
+      "instrument_id": "NSE-0002",
+      "symbol": "TCS",
+      "name": "Tata Consultancy Services Ltd",
+      "sector": "IT Services",
+      "all_symbols": [
+       "TCS"
+      ]
+     },
+     {
+      "instrument_id": "NSE-0003",
+      "symbol": "INFY",
+      "name": "Infosys Ltd",
+      "sector": "IT Services",
+      "all_symbols": [
+       "INFY"
+      ]
+     },
+     {
+      "instrument_id": "NSE-0004",
+      "symbol": "HDFCBANK",
+      "name": "HDFC Bank Ltd",
+      "sector": "Banks",
+      "all_symbols": [
+       "HDFCBANK"
+      ]
+     },
+     {
+      "instrument_id": "NSE-0005",
+      "symbol": "ICICIBANK",
+      "name": "ICICI Bank Ltd",
+      "sector": "Banks",
+      "all_symbols": [
+       "ICICIBANK"
+      ]
+     },
+     {
+      "instrument_id": "NSE-0006",
+      "symbol": "SUNPHARMA",
+      "name": "Sun Pharmaceutical Industries Ltd",
+      "sector": "Pharmaceuticals",
+      "all_symbols": [
+       "SUNPHARMA"
+      ]
+     },
      {
       "instrument_id": "SYN-0001",
       "symbol": "NWSC",
@@ -21066,7 +21426,7 @@
      }
     ],
     "reference_version": "synthetic-2026.1",
-    "reference_license": "CC0-1.0 (synthetic; every issuer, ticker and identifier here is invented)",
+    "reference_license": "Mixed. SYN- entries: CC0-1.0 (synthetic; every issuer, ticker and identifier invented). NSE- entries: real, publicly listed Indian issuers and their real NSE symbols, used as public instrument-identifier reference data only.",
     "meta": {
      "schema_version": "1.0",
      "as_of": "2026-03-05T00:00:00Z",

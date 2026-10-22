@@ -1,0 +1,96 @@
+{{- $root := . -}}
+{{- range $key, $svc := .Values.services }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "alphadots.fullname" $root }}-{{ $key }}
+  labels:
+    {{- include "alphadots.labels" $root | nindent 4 }}
+    {{- include "alphadots.componentLabel" (dict "component" $key) | nindent 4 }}
+spec:
+  replicas: {{ $svc.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "alphadots.componentSelectorLabels" (dict "component" $key "Release" $root.Release "Chart" $root.Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "alphadots.labels" $root | nindent 8 }}
+        {{- include "alphadots.componentLabel" (dict "component" $key) | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: {{ $key }}
+          image: {{ include "alphadots.serviceImage" (dict "root" $root "service" $key) }}
+          imagePullPolicy: {{ $root.Values.image.pullPolicy }}
+          # No args: every one of these five services' `main()` runs its server loop
+          # directly with no CLI parsing (same as compose -- no `command:` override there
+          # either). Only `ingestion` takes a subcommand; see templates/ingestion-job.yaml.
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          envFrom:
+            - configMapRef: { name: {{ include "alphadots.fullname" $root }}-env }
+          env:
+            - name: ALPHADOTS_DATABASE_URL
+              valueFrom: { secretKeyRef: { name: {{ include "alphadots.fullname" $root }}-secrets, key: ALPHADOTS_DATABASE_URL } }
+            {{- if eq $key "api" }}
+            - name: ALPHADOTS_API_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ include "alphadots.fullname" $root }}-secrets, key: ALPHADOTS_API_TOKEN } }
+            {{- end }}
+            {{- if eq $key "research-agent" }}
+            - name: ALPHADOTS_API_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ include "alphadots.fullname" $root }}-secrets, key: ALPHADOTS_API_TOKEN } }
+            - name: ALPHADOTS_GROQ_API_KEY
+              valueFrom: { secretKeyRef: { name: {{ include "alphadots.fullname" $root }}-secrets, key: ALPHADOTS_GROQ_API_KEY } }
+            {{- end }}
+            - name: ALPHADOTS_METRICS_PORT
+              value: {{ if $svc.httpPort }}"0"{{ else }}{{ $svc.metricsPort | quote }}{{ end }}
+            {{- range $svc.extraEnv }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          ports:
+            {{- if $svc.httpPort }}
+            - name: http
+              containerPort: {{ $svc.httpPort }}
+            {{- else }}
+            - name: metrics
+              containerPort: {{ $svc.metricsPort }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: {{ if $svc.httpPort }}{{ $svc.probePath }}{{ else }}/metrics{{ end }}
+              port: {{ if $svc.httpPort }}{{ $svc.httpPort }}{{ else }}{{ $svc.metricsPort }}{{ end }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: {{ if $svc.httpPort }}{{ $svc.livePath }}{{ else }}/metrics{{ end }}
+              port: {{ if $svc.httpPort }}{{ $svc.httpPort }}{{ else }}{{ $svc.metricsPort }}{{ end }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            {{- toYaml $svc.resources | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: fixtures, mountPath: /app/data/fixtures, readOnly: true }
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        # Mirrors infra/compose's read-only fixtures bind mount; populated on the k3d
+        # node by infra/k3d/cluster-config.yaml's `volumes:` entry (host ./data/fixtures).
+        - name: fixtures
+          hostPath: { path: /fixtures, type: DirectoryOrCreate }
+{{- end }}

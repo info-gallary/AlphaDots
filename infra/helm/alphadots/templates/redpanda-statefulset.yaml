@@ -1,0 +1,73 @@
+# Single-broker Redpanda, same as infra/compose. Not an HA setup -- see
+# docs/threat-model.md and Chart.yaml's top note.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "alphadots.fullname" . }}-redpanda
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  clusterIP: None # headless: StatefulSet pod DNS (…-redpanda-0) is the stable address
+  selector:
+    {{- include "alphadots.componentSelectorLabels" (dict "component" "redpanda" "Release" .Release "Chart" .Chart) | nindent 4 }}
+  ports:
+    - { name: kafka, port: 9092, targetPort: 9092 }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "alphadots.fullname" . }}-redpanda
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "alphadots.fullname" . }}-redpanda
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "alphadots.componentSelectorLabels" (dict "component" "redpanda" "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "alphadots.labels" . | nindent 8 }}
+        {{- include "alphadots.componentLabel" (dict "component" "redpanda") | nindent 8 }}
+    spec:
+      # No runAsNonRoot/runAsUser here, unlike postgres: the upstream Redpanda image's
+      # default uid isn't verified against a live container on this machine (k3d is
+      # blocked - see infra/k3d/cluster-config.yaml), and setting runAsNonRoot without
+      # the right uid would make the pod fail to start outright rather than just being
+      # less hardened. seccompProfile alone is safe to add unconditionally.
+      securityContext:
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: redpanda
+          image: {{ .Values.redpanda.image }}
+          command:
+            - redpanda
+            - start
+            - --mode=dev-container
+            - --smp=1
+            - --memory=1G
+            - --kafka-addr=internal://0.0.0.0:9092
+            - --advertise-kafka-addr=internal://$(POD_NAME).{{ include "alphadots.fullname" . }}-redpanda:9092
+            - --set
+            - redpanda.auto_create_topics_enabled=false
+          env:
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+          ports:
+            - { name: kafka, containerPort: 9092 }
+          readinessProbe:
+            exec: { command: ["/bin/sh", "-c", "rpk cluster health | grep -q 'Healthy:.*true'"] }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 24
+          resources:
+            {{- toYaml .Values.redpanda.resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/redpanda/data }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources: { requests: { storage: {{ .Values.redpanda.storage }} } }

@@ -1,0 +1,56 @@
+{{/*
+CPU-based HPA for `api` and `web` only -- the two user-facing, horizontally-scalable
+components. Never applied to the four pipeline workers (each is a single logical
+consumer of its topic today; scaling them needs a partition-key story the project does
+not have yet, see docs/adr/0001) or to the single-replica StatefulSets (postgres,
+redpanda - scaling either changes its identity, not just its count).
+
+Disabled by default (see values.yaml's `autoscaling.enabled` comment): a k3d cluster
+has no metrics-server unless you install one, and an HPA that can only ever read
+`<unknown>` for CPU is not a tested, working autoscaler - it is an unverified file, which
+CLAUDE.md explicitly says not to claim as "autoscaling works". Install metrics-server
+and set `--set autoscaling.enabled=true` to actually exercise this.
+*/}}
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "alphadots.fullname" . }}-api
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "alphadots.fullname" . }}-api
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "alphadots.fullname" . }}-web
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "alphadots.fullname" . }}-web
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}

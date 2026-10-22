@@ -8,19 +8,15 @@ import { formatMinute, formatTime } from "@/lib/format";
 import { useTheme, type Theme } from "@/lib/useTheme";
 
 import { useAppState } from "./AppState";
-import { BrandMark, IssuersGlyph, SystemGlyph, TapeGlyph } from "./icons";
+import { BrandMark, IssuersGlyph, OverviewGlyph, ResearchGlyph, SystemGlyph, TapeGlyph } from "./icons";
 import { StatusTag } from "./primitives";
 
 const NAV = [
-  { href: "/", label: "Event tape", Glyph: TapeGlyph },
+  { href: "/", label: "Overview", Glyph: OverviewGlyph },
+  { href: "/tape", label: "Event tape", Glyph: TapeGlyph },
   { href: "/issuers", label: "Issuers", Glyph: IssuersGlyph },
+  { href: "/research", label: "Research", Glyph: ResearchGlyph },
   { href: "/system", label: "Pipeline", Glyph: SystemGlyph },
-] as const;
-
-// Views named in the specification that do not exist yet. Listed, not faked.
-const PLANNED = [
-  { label: "Research notebook", milestone: "M4" },
-  { label: "Validation workbench", milestone: "M3" },
 ] as const;
 
 const MINUTE_MS = 60_000;
@@ -29,32 +25,33 @@ function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
+/** Where the data comes from, stated once and quietly; the tooltip carries the detail. */
 function SourceBadge() {
-  const { source, feed, apiError } = useAppState();
+  const { source, feed, apiError, asOf } = useAppState();
   if (apiError) {
     return (
       <StatusTag tone="critical" strong title={apiError.message}>
-        DATA UNAVAILABLE
+        Data unavailable
       </StatusTag>
     );
   }
   if (source?.source === "snapshot") {
     return (
-      <StatusTag
-        tone="warning"
-        strong
-        title="Synthetic fixtures replayed through the real pipeline and frozen into this deployment. No live pipeline is attached."
-      >
-        SIMULATED · SNAPSHOT
-      </StatusTag>
+      <span className="feed-chip" title="Fixture replay through the real pipeline, frozen into this deployment.">
+        <span className="feed-dot" data-state="static" aria-hidden="true" />
+        Snapshot
+      </span>
     );
   }
-  if (feed?.mode === "live") return <StatusTag tone="good" strong>LIVE FEED</StatusTag>;
-  if (feed?.mode === "delayed") return <StatusTag tone="warning" strong>DELAYED FEED</StatusTag>;
+  const label = feed?.mode === "live" ? "Live" : feed?.mode === "delayed" ? "Delayed" : "Replay";
   return (
-    <StatusTag tone="warning" strong title="Synthetic fixture replay. Not market data.">
-      SIMULATED FEED
-    </StatusTag>
+    <span
+      className="feed-chip"
+      title={feed?.mode === "simulated" ? "Fixture replay through the live pipeline. Not exchange market data." : undefined}
+    >
+      <span className="feed-dot" data-state={asOf === null ? "streaming" : "static"} aria-hidden="true" />
+      {label} feed
+    </span>
   );
 }
 
@@ -147,18 +144,8 @@ export function Shell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
-        <div className="nav nav-planned-group">
-          <span className="nav-label">Not built yet</span>
-          {PLANNED.map((item) => (
-            <span key={item.label} className="nav-planned">
-              {item.label}
-              <span className="chip">{item.milestone}</span>
-            </span>
-          ))}
-        </div>
         <div className="rail-foot">
           <ThemeSwitch />
-          <span className="rail-version">Milestone M0 · research only</span>
         </div>
       </aside>
 

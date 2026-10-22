@@ -6,7 +6,7 @@
   "synthetic": true,
   "files": {
     "instruments.json": {
-      "sha256": "1b942235cfed8f31310d0904b084c5e6582e7c3d8ffa3a316b439600c5cdca96"
+      "sha256": "fba12a7d0d87a985ebfc4421b86b51e43da128c302725dec4be22c4e6bb21e9f"
     },
     "news/replay.jsonl": {
       "sha256": "2ccc1b2852a101a044fa9d7709502f2390526aa6945d3a415a2272e5f00129f5",

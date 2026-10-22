@@ -150,7 +150,9 @@ async def test_overview_counts_match_the_seed_fixture(client: httpx.AsyncClient)
         "dead_letters": 2,
     }
     assert body["feed"]["earliest_available_at"] == "2026-03-02T13:30:06Z"
-    assert len(body["instruments"]) == 8
+    # 8 fictional (SYN-) issuers with fixture events + 6 real NSE issuers carrying zero
+    # events by design (instrument-universe reference data only; see instruments.json).
+    assert len(body["instruments"]) == 14
     by_symbol = {item["instrument"]["symbol"]: item for item in body["instruments"]}
     assert by_symbol["NWSC"]["event_count"] == 3
     assert by_symbol["HLCB"]["latest_signal"]["stance"] == "negative"

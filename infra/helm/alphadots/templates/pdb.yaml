@@ -1,0 +1,42 @@
+{{/*
+PDB only for api and web: the only two components here where "replica-worthy" is even
+meaningful (stateless, externally reachable, and the ones `autoscaling` targets).
+postgres/redpanda are single-replica StatefulSets locally and deliberately have no PDB
+here, same as CLAUDE.md's "PodDisruptionBudget where justified" asks for.
+
+A PDB with minAvailable:1 is only meaningful at replicas >= 2 -- at the default
+replicas:1 it would instead block every voluntary eviction (node drain, cluster
+upgrade) with zero benefit, which is the exact problem it's meant to avoid. So each PDB
+below only renders once that component's replica count is actually turned up (e.g.
+`--set services.api.replicas=2`), and is silently absent otherwise rather than lying
+about disruption tolerance that doesn't exist yet.
+*/}}
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- if ge (int .Values.services.api.replicas) 2 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "alphadots.fullname" . }}-api
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "alphadots.componentSelectorLabels" (dict "component" "api" "Release" .Release "Chart" .Chart) | nindent 6 }}
+---
+{{- end }}
+{{- if ge (int .Values.web.replicas) 2 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "alphadots.fullname" . }}-web
+  labels:
+    {{- include "alphadots.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "alphadots.componentSelectorLabels" (dict "component" "web" "Release" .Release "Chart" .Chart) | nindent 6 }}
+{{- end }}
+{{- end }}

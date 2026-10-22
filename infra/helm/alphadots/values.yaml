@@ -1,0 +1,177 @@
+# Default values for the AlphaDots chart. Built for a local k3d cluster: images are
+# built locally and `k3d image import`-ed (imagePullPolicy IfNotPresent, no registry
+# push needed). Point `image.registry` at a real registry (e.g. the ECR repos the
+# Terraform `ecr` module creates) for a non-local cluster.
+#
+# `postgres.password`, `api.token` and `researchAgent.groqApiKey` below are templated
+# straight into a Kubernetes Secret (templates/secret.yaml) for local/dev use. A real
+# deployment should instead point at an External Secrets Operator / AWS Secrets Manager
+# reference and never pass a live credential through `--set` or values.yaml -- see
+# docs/threat-model.md and docs/cost-guardrails.md.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  registry: "" # e.g. "123456789012.dkr.ecr.us-east-1.amazonaws.com/alphadots" (no trailing slash)
+  tag: dev
+  pullPolicy: IfNotPresent
+
+# Shared, non-secret environment (templates/configmap.yaml). Mirrors the `x-python-env`
+# anchor in infra/compose/docker-compose.yml.
+env:
+  logLevel: INFO
+  stageLatencyAllowanceSeconds: "1.0"
+  fixturesDir: /app/data/fixtures
+
+postgres:
+  image: postgres:17.11-alpine
+  user: alphadots
+  database: alphadots
+  password: alphadots-local-dev # dev default only -- see Secret note above
+  storage: 1Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 384Mi }
+
+redpanda:
+  image: docker.redpanda.com/redpandadata/redpanda:v26.2.4
+  storage: 1Gi
+  topics:
+    - news.raw.v1
+    - events.normalized.v1
+    - sentiment.scored.v1
+    - signals.generated.v1
+    - events.dead_letter.v1
+  resources:
+    requests: { cpu: 250m, memory: 768Mi }
+    limits: { cpu: "1", memory: 1536Mi }
+
+# ALPHADOTS_API_TOKEN: empty = open local access (matches .env.example's default).
+# Shared by api, research-agent (it calls the api with this same token) and web.
+api:
+  token: ""
+  nodePort: 30080
+
+# `researchAgent.groqApiKey` empty -> ALPHADOTS_LLM_PROVIDER=auto falls back to the
+# deterministic mock model; no key, nothing billed, identical behaviour to `make dev-agent`
+# with no key set. Bounds below are applied to every run, mock or live --
+# see docs/cost-guardrails.md.
+researchAgent:
+  llmProvider: auto
+  groqApiKey: ""
+  groqModel: llama-3.3-70b-versatile
+  groqPriceInputPerMUsd: ""
+  groqPriceOutputPerMUsd: ""
+  maxToolCalls: "8"
+  maxTokens: "900"
+  timeoutSeconds: "25"
+  maxCostUsd: "0.02"
+  monitorCacheSeconds: "30"
+
+# One-shot replay Job (`infra/compose`'s `ingestion` profile `jobs` equivalent). Not
+# run automatically on install -- trigger it explicitly, see infra/helm/alphadots/README
+# or `make k8s-smoke`.
+ingestion:
+  module: alphadots_ingestion
+  fixture: news/seed.jsonl
+
+# The five long-running Python services, all built from the one
+# infra/docker/service.Dockerfile with --build-arg SERVICE=<key> --build-arg MODULE=<module>.
+# `httpPort` set -> probes hit `probePath`/`livePath` on it (api, research-agent).
+# `httpPort` unset, `metricsPort` set -> probes hit `/metrics` on it, same as the compose
+# healthcheck (preprocessor, sentiment, signal-engine: pure workers, no HTTP surface).
+services:
+  preprocessor:
+    module: alphadots_preprocessor
+    replicas: 1
+    metricsPort: 9100
+    resources:
+      requests: { cpu: 100m, memory: 160Mi }
+      limits: { cpu: "0.5", memory: 256Mi }
+    extraEnv: []
+
+  sentiment:
+    module: alphadots_sentiment
+    replicas: 1
+    metricsPort: 9100
+    resources:
+      requests: { cpu: 100m, memory: 160Mi }
+      limits: { cpu: "0.5", memory: 256Mi }
+    extraEnv: []
+
+  signal-engine:
+    module: alphadots_signal_engine
+    replicas: 1
+    metricsPort: 9100
+    resources:
+      requests: { cpu: 100m, memory: 160Mi }
+      limits: { cpu: "0.5", memory: 256Mi }
+    # Heuristic priors, not estimated -- see docs/adr/0001.
+    extraEnv:
+      - name: ALPHADOTS_SIGNAL_TAU_SECONDS
+        value: "86400"
+      - name: ALPHADOTS_SIGNAL_LOOKBACK_SECONDS
+        value: "432000"
+
+  api:
+    module: alphadots_api
+    replicas: 1
+    httpPort: 8000
+    probePath: /health/ready
+    livePath: /health/live
+    serviceType: NodePort
+    resources:
+      requests: { cpu: 100m, memory: 192Mi }
+      limits: { cpu: "0.5", memory: 320Mi }
+    extraEnv:
+      - name: ALPHADOTS_API_HOST
+        value: "0.0.0.0"
+      - name: ALPHADOTS_API_PORT
+        value: "8000"
+
+  research-agent:
+    module: alphadots_research_agent
+    replicas: 1
+    httpPort: 8000
+    probePath: /health/ready
+    livePath: /health/live
+    serviceType: ClusterIP # internal only -- reached by `api`, never exposed (see docs/threat-model.md)
+    resources:
+      requests: { cpu: 100m, memory: 192Mi }
+      limits: { cpu: "0.5", memory: 320Mi }
+    extraEnv:
+      - name: ALPHADOTS_RESEARCH_AGENT_HOST
+        value: "0.0.0.0"
+      - name: ALPHADOTS_RESEARCH_AGENT_PORT
+        value: "8000"
+
+web:
+  image:
+    registry: ""
+    repository: alphadots/web
+    tag: dev
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 3000
+  nodePort: 30300
+  resources:
+    requests: { cpu: 100m, memory: 192Mi }
+    limits: { cpu: "0.5", memory: 384Mi }
+
+networkPolicy:
+  enabled: true
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1 # applied only to api and web (see templates/pdb.yaml)
+
+autoscaling:
+  # CPU-based HPA on the `api` Deployment only. Requires the `metrics-server` add-on,
+  # which k3d does NOT ship by default -- `kubectl apply` the upstream metrics-server
+  # manifest first, or this HPA will show `<unknown>` for CPU and never scale. Disabled
+  # by default for that reason; enable once metrics-server is actually installed.
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 75

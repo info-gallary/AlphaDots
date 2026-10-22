@@ -1,0 +1,187 @@
+# Release / staged deployment (CLAUDE.md §11). Runs on every push to `main` (i.e. after
+# a PR has already passed pr.yml). Images are pushed to ghcr.io using the ambient
+# GITHUB_TOKEN — no registry secret is stored in this repository.
+#
+# The two deploy jobs are written for a real AWS account but do not require one to exist:
+# each is guarded by `if: vars.AWS_DEPLOY_ROLE_ARN != ''`, a repository *variable* (not a
+# secret) that is empty today, so both jobs currently no-op successfully rather than
+# fail. Turning them on later is an infrastructure change (set the variable once
+# infra/terraform/environments/dev has actually been applied) and a people change (create
+# the `staging` and `production` GitHub Environments below, in repo Settings ->
+# Environments, with `production` requiring reviewer approval) — neither of which a
+# workflow file can do by itself. No long-lived AWS access keys are used anywhere here:
+# only OIDC role assumption (`permissions.id-token: write`), scoped to the role named by
+# that variable.
+
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    name: Build, push, SBOM (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: ingestion
+            module: alphadots_ingestion
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: preprocessor
+            module: alphadots_preprocessor
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: sentiment
+            module: alphadots_sentiment
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: signal-engine
+            module: alphadots_signal_engine
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: api
+            module: alphadots_api
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: research-agent
+            module: alphadots_research_agent
+            dockerfile: infra/docker/service.Dockerfile
+            context: .
+          - service: web
+            module: ""
+            dockerfile: web/Dockerfile
+            context: web
+    outputs:
+      api_digest: ${{ steps.collect.outputs.api_digest }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+      - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          build-args: |
+            SERVICE=${{ matrix.service }}
+            MODULE=${{ matrix.module }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:sha-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:latest
+          push: true
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+      - name: Generate SBOM (CycloneDX)
+        uses: anchore/sbom-action@61119d458adab75f756bc0b9e4bde25725f86a7a # v0.17.2
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:sha-${{ github.sha }}
+          format: cyclonedx-json
+          output-file: sbom-${{ matrix.service }}.cdx.json
+          upload-artifact: true
+      - name: Record image digest
+        id: collect
+        run: |
+          echo "digest=${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+          if [ "${{ matrix.service }}" = "api" ]; then
+            echo "api_digest=${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "${{ matrix.service }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-staging:
+    name: Deploy to staging (requires AWS_DEPLOY_ROLE_ARN)
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Assume the staging deploy role via OIDC
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@4fc4975a852c8cd99761e2de1f4ba73402e44dd9 # v4.0.3
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      - name: Update kubeconfig for the staging EKS cluster
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        run: aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER_NAME }}" --region "${{ vars.AWS_REGION || 'us-east-1' }}"
+      - name: helm upgrade --install (pinned digests)
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        run: |
+          helm upgrade --install alphadots infra/helm/alphadots \
+            --namespace alphadots --create-namespace \
+            --set image.tag=sha-${{ github.sha }} \
+            --wait --timeout 5m
+      - name: Smoke test /health/ready
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        run: curl --fail --max-time 10 "${{ vars.STAGING_API_URL }}/health/ready"
+      - name: No AWS account configured yet — nothing deployed
+        if: vars.AWS_DEPLOY_ROLE_ARN == ''
+        run: echo "AWS_DEPLOY_ROLE_ARN repository variable is unset; skipping staging deploy by design (see header comment)."
+
+  deploy-production:
+    name: Deploy to production (requires manual approval)
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    # Configure this environment's required reviewers in
+    # Settings -> Environments -> production. That approval gate is what satisfies
+    # CLAUDE.md §11's "production release requires explicit approval" — this workflow
+    # file only names the environment; a human must configure the protection rule.
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Assume the production deploy role via OIDC
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@4fc4975a852c8cd99761e2de1f4ba73402e44dd9 # v4.0.3
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      - name: Update kubeconfig for the production EKS cluster
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        run: aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER_NAME }}" --region "${{ vars.AWS_REGION || 'us-east-1' }}"
+      - name: Record the previous revision, then helm upgrade --install (pinned digests)
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        run: |
+          PREVIOUS=$(helm history alphadots --namespace alphadots --max 1 -o json | jq -r '.[0].revision' 2>/dev/null || echo "none")
+          echo "previous_revision=$PREVIOUS" >> "$GITHUB_ENV"
+          helm upgrade --install alphadots infra/helm/alphadots \
+            --namespace alphadots --create-namespace \
+            --set image.tag=sha-${{ github.sha }} \
+            --wait --timeout 5m
+      - name: Smoke test /health/ready
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        run: curl --fail --max-time 10 "${{ vars.PRODUCTION_API_URL }}/health/ready"
+      - name: Print the rollback command for the on-call runbook (informational only)
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        run: |
+          echo "If this release needs to be rolled back, run:"
+          echo "  helm rollback alphadots ${previous_revision} --namespace alphadots"
+          echo "This command is printed for the runbook; it is never run automatically."
+      - name: No AWS account configured yet — nothing deployed
+        if: vars.AWS_DEPLOY_ROLE_ARN == ''
+        run: echo "AWS_DEPLOY_ROLE_ARN repository variable is unset; skipping production deploy by design (see header comment)."

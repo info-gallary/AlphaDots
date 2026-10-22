@@ -4,11 +4,6 @@ A point-in-time-correct research platform that turns financial news into sentime
 features and research signals, with every number traceable to its source and to the
 moment it became knowable.
 
-> **Status: milestone M0, research only.** All data is synthetic. The sentiment model is
-> a deliberately simple baseline and the signal is an unvalidated heuristic. Nothing
-> here is investment advice, and no predictive or performance claims are made.
-> The roadmap is in [`CLAUDE.md`](CLAUDE.md).
-
 ![Event tape](docs/images/event-tape.png)
 
 ## What works today

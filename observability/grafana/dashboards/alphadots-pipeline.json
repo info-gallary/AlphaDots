@@ -1,109 +1,1136 @@
 {
   "title": "AlphaDots Pipeline",
   "uid": "alphadots-pipeline",
+  "description": "Ingestion, pipeline stages, model behaviour, API and research agent. Run `make demo` for traffic.",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "editable": true,
   "timezone": "utc",
   "refresh": "10s",
-  "time": { "from": "now-30m", "to": "now" },
-  "tags": ["alphadots"],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "tags": [
+    "alphadots"
+  ],
   "panels": [
     {
-      "id": 1, "title": "Ingest events rate (by source, status)",
-      "type": "timeseries", "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(rate(alphadots_ingest_events_total[5m])) by (source, status)", "legendFormat": "{{source}} / {{status}}" }],
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
-    },
-    {
-      "id": 2, "title": "Ingest lag (seconds, by source)",
-      "type": "timeseries", "gridPos": { "x": 8, "y": 0, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "alphadots_ingest_lag_seconds", "legendFormat": "{{source}}" }],
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
-    },
-    {
-      "id": 3, "title": "Dead-letter events rate (by service, reason)",
-      "type": "timeseries", "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(rate(alphadots_events_dlq_total[5m])) by (service, reason)", "legendFormat": "{{service}} / {{reason}}" }],
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
-    },
-    {
-      "id": 4, "title": "Pipeline stage latency (p50 / p95 / p99)",
-      "type": "timeseries", "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "id": 1,
+      "type": "stat",
+      "title": "Records ingested (last replay)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
       "targets": [
-        { "expr": "histogram_quantile(0.50, sum(rate(alphadots_pipeline_latency_seconds_bucket[5m])) by (le, stage))", "legendFormat": "p50 {{stage}}" },
-        { "expr": "histogram_quantile(0.95, sum(rate(alphadots_pipeline_latency_seconds_bucket[5m])) by (le, stage))", "legendFormat": "p95 {{stage}}" },
-        { "expr": "histogram_quantile(0.99, sum(rate(alphadots_pipeline_latency_seconds_bucket[5m])) by (le, stage))", "legendFormat": "p99 {{stage}}" }
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(alphadots_ingest_events_total{status=\"published\"}) or vector(0)",
+          "legendFormat": "",
+          "instant": true
+        }
       ],
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "description": "Pushed by the ingestion job when a replay finishes (via the Pushgateway)."
     },
     {
-      "id": 5, "title": "Model inference latency (p50 / p95 / p99)",
-      "type": "timeseries", "gridPos": { "x": 8, "y": 8, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "id": 2,
+      "type": "stat",
+      "title": "Quarantined to dead letters",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
       "targets": [
-        { "expr": "histogram_quantile(0.50, sum(rate(alphadots_model_inference_seconds_bucket[5m])) by (le, model_version))", "legendFormat": "p50 {{model_version}}" },
-        { "expr": "histogram_quantile(0.95, sum(rate(alphadots_model_inference_seconds_bucket[5m])) by (le, model_version))", "legendFormat": "p95 {{model_version}}" },
-        { "expr": "histogram_quantile(0.99, sum(rate(alphadots_model_inference_seconds_bucket[5m])) by (le, model_version))", "legendFormat": "p99 {{model_version}}" }
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(alphadots_events_dlq_total) or vector(0)",
+          "legendFormat": "",
+          "instant": true
+        }
       ],
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "description": "Poison records the pipeline refused to process, from ingestion and every worker."
     },
     {
-      "id": 6, "title": "Model abstention rate (by reason)",
-      "type": "timeseries", "gridPos": { "x": 16, "y": 8, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(rate(alphadots_model_abstentions_total[5m])) by (reason)", "legendFormat": "{{reason}}" }],
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
-    },
-    {
-      "id": 7, "title": "API request rate (by route, status)",
-      "type": "timeseries", "gridPos": { "x": 0, "y": 16, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(rate(alphadots_api_requests_total[5m])) by (route, status)", "legendFormat": "{{route}} / {{status}}" }],
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
-    },
-    {
-      "id": 8, "title": "API error rate (4xx / 5xx, by route)",
-      "type": "timeseries", "gridPos": { "x": 8, "y": 16, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(rate(alphadots_api_requests_total{status=~\"4..|5..\"}[5m])) by (route, status)", "legendFormat": "{{route}} / {{status}}" }],
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
-    },
-    {
-      "id": 9, "title": "Agent tool-call rate (by tool, status)",
-      "type": "timeseries", "gridPos": { "x": 16, "y": 16, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(rate(alphadots_agent_tool_calls_total[5m])) by (tool, status)", "legendFormat": "{{tool}} / {{status}}" }],
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
-    },
-    {
-      "id": 10, "title": "Agent run latency (p50 / p95 / p99, by graph)",
-      "type": "timeseries", "gridPos": { "x": 0, "y": 24, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "id": 3,
+      "type": "stat",
+      "title": "Stage operations",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
       "targets": [
-        { "expr": "histogram_quantile(0.50, sum(rate(alphadots_agent_run_seconds_bucket[5m])) by (le, graph))", "legendFormat": "p50 {{graph}}" },
-        { "expr": "histogram_quantile(0.95, sum(rate(alphadots_agent_run_seconds_bucket[5m])) by (le, graph))", "legendFormat": "p95 {{graph}}" },
-        { "expr": "histogram_quantile(0.99, sum(rate(alphadots_agent_run_seconds_bucket[5m])) by (le, graph))", "legendFormat": "p99 {{graph}}" }
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(alphadots_pipeline_latency_seconds_count) or vector(0)",
+          "legendFormat": "",
+          "instant": true
+        }
       ],
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "description": "One record handled by one stage counts once, so a record crossing four stages counts four times. Counts since each service last started; run `make demo` to generate traffic."
     },
     {
-      "id": 11, "title": "Agent LLM spend, total (USD, by provider)",
-      "type": "stat", "gridPos": { "x": 8, "y": 24, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(alphadots_agent_cost_usd_total) by (provider)", "legendFormat": "{{provider}}", "instant": true }],
-      "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 }, "overrides": [] }
+      "id": 4,
+      "type": "stat",
+      "title": "API requests",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(alphadots_api_requests_total) or vector(0)",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "description": "Counts since each service last started; run `make demo` to generate traffic."
     },
     {
-      "id": 12, "title": "Agent abstention rate (by graph, reason)",
-      "type": "timeseries", "gridPos": { "x": 16, "y": 24, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(rate(alphadots_agent_abstentions_total[5m])) by (graph, reason)", "legendFormat": "{{graph}} / {{reason}}" }],
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+      "id": 5,
+      "type": "stat",
+      "title": "Agent runs",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(alphadots_agent_run_seconds_count) or vector(0)",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "description": "Research briefs plus monitor summaries. Counts since each service last started; run `make demo` to generate traffic."
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Scrape targets healthy",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100 * sum(up) / count(up)",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "description": "Share of Prometheus scrape targets answering right now."
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Throughput by stage (records/s)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (stage) (rate(alphadots_pipeline_latency_seconds_count[1m]))",
+          "legendFormat": "{{stage}}",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Stage latency p95 (live)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, stage) (rate(alphadots_pipeline_latency_seconds_bucket[1m])))",
+          "legendFormat": "{{stage}}",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "bargauge",
+      "title": "Stage latency p50 / p95 (since start)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, stage) (alphadots_pipeline_latency_seconds_bucket))",
+          "legendFormat": "{{stage}} p50",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, stage) (alphadots_pipeline_latency_seconds_bucket))",
+          "legendFormat": "{{stage}} p95",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#9085e9"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "text": {
+          "titleSize": 12,
+          "valueSize": 14
+        },
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 22
+      },
+      "description": "Counts since each service last started; run `make demo` to generate traffic."
+    },
+    {
+      "id": 10,
+      "type": "bargauge",
+      "title": "Model inference latency p50 / p95 (since start)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, model_version) (alphadots_model_inference_seconds_bucket))",
+          "legendFormat": "{{model_version}} p50",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, model_version) (alphadots_model_inference_seconds_bucket))",
+          "legendFormat": "{{model_version}} p95",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#9085e9"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "text": {
+          "titleSize": 12,
+          "valueSize": 14
+        },
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 22
+      },
+      "description": "Counts since each service last started; run `make demo` to generate traffic."
+    },
+    {
+      "id": 11,
+      "type": "bargauge",
+      "title": "Abstentions by reason (since start)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (reason) (alphadots_model_abstentions_total)",
+          "legendFormat": "{{reason}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#9085e9"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "text": {
+          "titleSize": 12,
+          "valueSize": 14
+        },
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 22
+      },
+      "description": "The sentiment model and the signal engine decline to score rather than guess. Counts since each service last started; run `make demo` to generate traffic."
+    },
+    {
+      "id": 12,
+      "type": "bargauge",
+      "title": "Ingested records by source and status (last replay)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (source, status) (alphadots_ingest_events_total)",
+          "legendFormat": "{{source}} · {{status}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#9085e9"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "text": {
+          "titleSize": 12,
+          "valueSize": 14
+        },
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 22
+      }
+    },
+    {
+      "id": 13,
+      "type": "bargauge",
+      "title": "Ingest lag by source (last replay)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 20,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (source) (alphadots_ingest_lag_seconds)",
+          "legendFormat": "{{source}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#9085e9"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "text": {
+          "titleSize": 12,
+          "valueSize": 14
+        },
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 22
+      },
+      "description": "first_seen_at minus published_at for the last record of each source, in event time."
+    },
+    {
+      "id": 14,
+      "type": "table",
+      "title": "Dead letters by service and reason",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 20,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (service, reason) (alphadots_events_dlq_total)",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "count"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "API requests/s by route (live)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (route) (rate(alphadots_api_requests_total[1m]))",
+          "legendFormat": "{{route}}",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "bargauge",
+      "title": "API responses by route and status (since start)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (route, status) (alphadots_api_requests_total)",
+          "legendFormat": "{{route}} · {{status}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#9085e9"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "text": {
+          "titleSize": 12,
+          "valueSize": 14
+        },
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 22
+      },
+      "description": "Counts since each service last started; run `make demo` to generate traffic."
+    },
+    {
+      "id": 17,
+      "type": "bargauge",
+      "title": "Agent tool calls by tool (since start)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (tool, status) (alphadots_agent_tool_calls_total)",
+          "legendFormat": "{{tool}} · {{status}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#9085e9"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "text": {
+          "titleSize": 12,
+          "valueSize": 14
+        },
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 22
+      },
+      "description": "Read-only, allowlisted tools only. Counts since each service last started; run `make demo` to generate traffic."
+    },
+    {
+      "id": 18,
+      "type": "bargauge",
+      "title": "Agent run latency p50 / p95 by graph (since start)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 36,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, graph) (alphadots_agent_run_seconds_bucket))",
+          "legendFormat": "{{graph}} p50",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, graph) (alphadots_agent_run_seconds_bucket))",
+          "legendFormat": "{{graph}} p95",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#9085e9"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "text": {
+          "titleSize": 12,
+          "valueSize": 14
+        },
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 22
+      },
+      "description": "Counts since each service last started; run `make demo` to generate traffic."
+    },
+    {
+      "id": 19,
+      "type": "table",
+      "title": "Agent abstentions by reason (since start)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 36,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (graph, reason) (alphadots_agent_abstentions_total)",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "Runs that declined to write a brief, for example an issuer with no news. Counts since each service last started; run `make demo` to generate traffic.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "count"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Redpanda: Kafka bytes received/s",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 16,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(vectorized_kafka_rpc_received_bytes[1m]))",
+          "legendFormat": "broker",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "LLM spend (USD)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 44,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(alphadots_agent_cost_usd_total) or vector(0)",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "description": "Zero with the offline mock model. With Groq it counts only once a price per token is configured."
     }
   ]
 }

@@ -19,10 +19,18 @@ moment it became knowable.
   a stored item, and abstains when evidence is thin (it does for every NSE issuer, which
   has no news). A second graph monitors the pipeline. Runs on Groq with a key, or on a
   deterministic mock with none. See [ADR 0003](docs/adr/0003-bounded-research-agent.md).
+- **A leakage-resistant backtest of the signal**, run where the right answer is known: a
+  synthetic market with a planted effect and the same market with none. Expanding
+  walk-forward with purge and embargo, `τ` chosen on training folds only, an untouched
+  holdout, costs, block-bootstrap Sharpe intervals, a deflated Sharpe ratio, and controls
+  (shuffled, lagged, price momentum, and a deliberate look-ahead bug). The method finds the
+  planted effect and stays silent on the null; the look-ahead bug turns "no effect" into a
+  Sharpe of +4.7. See the [study](docs/research/simulation-study.md).
 - **A research dashboard**: a market overview (signal leaderboard, tone mix, daily news
   flow, issuer × day heatmap, strongest headlines), the event tape with provenance
-  drill-down, issuer timelines, the research notebook, and pipeline monitoring. An as-of
-  slider shows exactly what the system knew at any moment, and every chart has a table view.
+  drill-down, issuer timelines, the research notebook, the backtest lab, and pipeline
+  monitoring. An as-of slider shows exactly what the system knew at any moment, and every
+  chart has a table view.
 - **Deployable to Vercel as is.** With no backend attached, the dashboard serves the real
   pipeline's output, plus agent briefs recorded at export, from a parity-tested snapshot.
 - **Deployment and DevSecOps**: multi-stage non-root images, Docker Compose profiles, a
@@ -31,6 +39,8 @@ moment it became knowable.
   an SBOM, and a [threat model](docs/threat-model.md).
 
 ![Research notebook](docs/images/research.png)
+
+![Backtest lab](docs/images/backtest.png)
 
 ## Quick start
 
@@ -57,6 +67,10 @@ cd web && ALPHADOTS_API_URL=http://localhost:18000 pnpm dev
 
 **3. The real stack: Redpanda, PostgreSQL and one container per service**
 
+`make demo` does all of it in one go: starts every profile, seeds, replays the news at a
+watchable pace, runs the research agent for every issuer and prints the URLs, so every
+dashboard (the web app on :13000, Grafana on :13001) has data. Step by step:
+
 ```bash
 make up          # builds images, starts everything, waits until healthy
 make seed        # curated fixture (idempotent; run it twice and nothing changes)
@@ -67,6 +81,17 @@ make agent-smoke # 9 checks: jobs, idempotency, citations, abstention, monitorin
 make ui          # dashboard container on http://localhost:13000
 make obs         # Prometheus on :19090, Grafana on http://localhost:13001
 make down        # ARGS=--volumes also deletes data
+```
+
+Grafana opens the pipeline dashboard without a login (anonymous, read-only, bound to
+127.0.0.1). To edit, sign in as `admin` with `ALPHADOTS_GRAFANA_PASSWORD` (default
+`admin`). Run-once jobs such as ingestion push their metrics to a Prometheus Pushgateway,
+so the ingest panels stay filled after the job exits.
+
+**4. The research study**
+
+```bash
+make research    # a few seconds; rewrites the backtest results and the report
 ```
 
 Kubernetes: `make k8s-up`, `make k8s-smoke`, `make k8s-down` (k3d and Helm). Steps,
@@ -92,7 +117,7 @@ CLI route, security properties and caching.
 |---|---|
 | `make test` | Python unit, contract, point-in-time leakage and end-to-end tests (in-memory bus, no Docker), plus dashboard parity against the real API |
 | `make test-integration` | The same pipeline on throwaway Redpanda and PostgreSQL containers: offset resume after restart, full redelivery, Kafka/Postgres output identical to the in-memory run |
-| `make lint` | ruff, strict mypy, schema-snapshot and fixture drift, snapshot drift, ESLint, `tsc` |
+| `make lint` | ruff, strict mypy, schema-snapshot and fixture drift, snapshot drift, research-results drift, ESLint, `tsc` |
 | `make security` | pip-audit, `pnpm audit`, Gitleaks, Semgrep, Trivy (gating); Checkov (reporting); CycloneDX SBOM |
 | `make web-build` | The production dashboard build Vercel runs |
 
@@ -101,6 +126,7 @@ scan of every built image and a coverage floor of 80% (currently about 95%).
 
 Tests worth reading first:
 [`tests/temporal_leakage`](tests/temporal_leakage/test_point_in_time.py),
+[`tests/research`](tests/research/test_study.py),
 [`tests/e2e`](tests/e2e/test_pipeline.py) and
 [`web/test/parity.test.ts`](web/test/parity.test.ts).
 
@@ -112,6 +138,7 @@ libs/common        bus (Kafka + in-memory), worker loop, config, logging, metric
 libs/quant         decayed-sentiment aggregate with the point-in-time guard
 libs/llm           bounded LLM adapter: Groq over plain httpx, deterministic mock for CI
 services/          ingestion · preprocessor · sentiment · signal_engine · api · research_agent
+research/          offline study: market simulation, walk-forward, metrics, deflated Sharpe
 web/               Next.js dashboard (live proxy or bundled snapshot)
 data/fixtures/     synthetic news (CC0) plus the instrument master, hash-pinned by MANIFEST.json
 infra/compose      Docker Compose stack and throwaway integration stack
@@ -120,14 +147,16 @@ infra/terraform    AWS modules and the dev environment (validated, never applied
 observability/     Prometheus scrape config, Grafana datasource and dashboard
 .github/workflows  PR verification and release workflows
 scripts/           task runner, fixture generator, snapshot exporter, smoke checks
-tests/             unit · contract · temporal_leakage · e2e · integration
-docs/              architecture, threat model, runbooks, cost guardrails, ADRs
+tests/             unit · contract · temporal_leakage · research · e2e · integration
+docs/              architecture, research report, threat model, runbooks, ADRs
 ```
 
 ## Documentation
 
 - [Architecture](docs/architecture.md): event flow, contracts, the availability model,
   delivery guarantees
+- [Simulation study](docs/research/simulation-study.md): method, results, what failed,
+  and whether it justifies more work
 - [Data and licences](docs/data-licenses.md): what the fixtures contain and why each seed
   line exists
 - [Deploying to Vercel](docs/deployment-vercel.md) and the
@@ -141,8 +170,11 @@ docs/              architecture, threat model, runbooks, cost guardrails, ADRs
 
 - The sentiment model is a small hand-written lexicon. It is easy to fool; one fixture
   shows a prompt-injection sentence raising its score.
-- Signals summarise news tone. They have not been tested against returns, and `τ` is a
-  configured prior.
+- The backtest runs on a synthetic market. It shows the evaluation can tell a real
+  effect from none; it says nothing about real returns. Even in the planted world the
+  daily-rebalanced strategy is not robustly profitable after 10 bps costs (net Sharpe 95%
+  interval −0.64 to +3.13, deflated Sharpe probability 0.54). The live signal engine still
+  uses a configured `τ`.
 - Dedup is exact-match after normalisation. "First processed wins" is not yet
   order-independent (M1 watermark policy).
 - NSE India issuers have no news source yet, so they carry no events or signals and the
@@ -150,6 +182,6 @@ docs/              architecture, threat model, runbooks, cost guardrails, ADRs
 - The Helm chart is linted and templated, but `k3d cluster create` could not run on the
   development machine (it cannot reach ghcr.io for k3d's helper image). The AWS
   Terraform passes `validate` and has never been applied.
-- Not yet built: the SEC adapter (M1), FinBERT (M2), market data and backtesting (M3),
-  and benchmarks (M6). The matching `make` targets fail with the milestone that owns them
+- Not yet built: the SEC adapter (M1), FinBERT (M2), real market data, LightGBM and
+  MLflow (M3), and benchmarks (M6). The matching `make` targets fail with the milestone that owns them
   instead of pretending.

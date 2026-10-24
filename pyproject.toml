@@ -15,6 +15,7 @@ dependencies = [
     "alphadots-signal-engine",
     "alphadots-api",
     "alphadots-research-agent",
+    "alphadots-research",
 ]
 
 [dependency-groups]
@@ -29,7 +30,7 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["libs/*", "services/*"]
+members = ["libs/*", "services/*", "research"]
 
 [tool.uv.sources]
 alphadots-contracts = { workspace = true }
@@ -42,6 +43,7 @@ alphadots-sentiment = { workspace = true }
 alphadots-signal-engine = { workspace = true }
 alphadots-api = { workspace = true }
 alphadots-research-agent = { workspace = true }
+alphadots-research = { workspace = true }
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -71,6 +73,7 @@ source = [
     "alphadots_signal_engine",
     "alphadots_api",
     "alphadots_research_agent",
+    "alphadots_research",
 ]
 omit = ["*/__main__.py"]
 
@@ -81,7 +84,7 @@ skip_covered = true
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["libs/*/src", "services/*/src", "scripts", "tests"]
+src = ["libs/*/src", "services/*/src", "research/src", "scripts", "tests"]
 extend-exclude = ["web"]
 
 [tool.ruff.lint]
@@ -114,6 +117,7 @@ mypy_path = [
     "services/signal_engine/src",
     "services/api/src",
     "services/research_agent/src",
+    "research/src",
 ]
 packages = [
     "alphadots_contracts",
@@ -126,6 +130,7 @@ packages = [
     "alphadots_signal_engine",
     "alphadots_api",
     "alphadots_research_agent",
+    "alphadots_research",
 ]
 
 [[tool.mypy.overrides]]

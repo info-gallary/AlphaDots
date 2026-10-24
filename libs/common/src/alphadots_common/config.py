@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_json: bool = True
     metrics_port: int = Field(default=0, ge=0, le=65535, description="0 disables the endpoint.")
+    # Where run-once jobs push their metrics on exit; empty disables the push.
+    pushgateway_url: str = ""
 
     bus_backend: Literal["memory", "kafka"] = "kafka"
     kafka_bootstrap: str = "localhost:19092"

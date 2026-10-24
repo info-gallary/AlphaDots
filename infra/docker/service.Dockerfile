@@ -27,6 +27,9 @@ WORKDIR /src
 COPY pyproject.toml uv.lock ./
 COPY libs/ libs/
 COPY services/ services/
+# uv resolves the whole workspace, so every member must be present; only the service
+# package (and what it depends on) is installed.
+COPY research/ research/
 ARG SERVICE
 # --frozen: fail rather than re-resolve if uv.lock is stale.
 # --no-editable: install workspace packages as wheels, so the runtime stage needs no source.

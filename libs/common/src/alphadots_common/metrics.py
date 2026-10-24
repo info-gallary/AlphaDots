@@ -11,7 +11,14 @@ Not yet instrumented (lands with the milestone that owns it):
 
 from __future__ import annotations
 
-from prometheus_client import Counter, Gauge, Histogram, start_http_server
+from prometheus_client import (
+    REGISTRY,
+    Counter,
+    Gauge,
+    Histogram,
+    push_to_gateway,
+    start_http_server,
+)
 
 _LATENCY_BUCKETS = (0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
 
@@ -79,3 +86,30 @@ def start_metrics_server(port: int) -> None:
     """Expose ``/metrics`` on ``port``. A port of 0 disables the endpoint."""
     if port:
         start_http_server(port)
+
+
+PUSH_TIMEOUT_SECONDS = 3.0
+
+
+def push_metrics(job: str, gateway_url: str, grouping_key: dict[str, str] | None = None) -> bool:
+    """Push this process's metrics to a Prometheus Pushgateway; return whether it worked.
+
+    For run-once jobs (ingestion replay) that exit before Prometheus could scrape them. The
+    gateway keeps the last push per ``(job, grouping_key)``, so a distinct key per kind of
+    run keeps one run from overwriting another's numbers. An empty ``gateway_url``
+    disables the push. A failed push is the caller's to log and must never fail the job
+    itself: metrics are observability, not part of the result.
+    """
+    if not gateway_url:
+        return False
+    try:
+        push_to_gateway(
+            gateway_url,
+            job=job,
+            registry=REGISTRY,
+            grouping_key=grouping_key,
+            timeout=PUSH_TIMEOUT_SECONDS,
+        )
+    except OSError:
+        return False
+    return True

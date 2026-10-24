@@ -68,7 +68,7 @@ jobs:
       # number, so it stays meaningful as code is added rather than just restating today.
       - run: >
           uv run pytest -m "not integration"
-          --cov=libs --cov=services
+          --cov=libs --cov=services --cov=research
           --cov-report=xml --cov-report=term-missing
           --cov-fail-under=80
       - run: pnpm test

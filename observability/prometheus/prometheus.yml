@@ -36,6 +36,13 @@ scrape_configs:
     static_configs:
       - targets: ["redpanda:9644"]
 
+  # Metrics pushed by run-once jobs. honor_labels keeps the pushing job's own `job` label
+  # (e.g. "ingestion") instead of relabelling everything as "pushgateway".
+  - job_name: pushgateway
+    honor_labels: true
+    static_configs:
+      - targets: ["pushgateway:9091"]
+
   - job_name: prometheus
     static_configs:
       - targets: ["localhost:9090"]

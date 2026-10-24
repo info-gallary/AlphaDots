@@ -76,6 +76,16 @@ export function OverviewGlyph(props: GlyphProps) {
   );
 }
 
+export function BacktestGlyph(props: GlyphProps) {
+  return (
+    <Glyph {...props}>
+      <path d="M2 13.5h12.5" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity={0.6} />
+      <path d="m2.5 11 3.5-3.5 2.5 2 5-5.5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={13.5} cy={4} r={1.6} fill="currentColor" />
+    </Glyph>
+  );
+}
+
 export function ResearchGlyph(props: GlyphProps) {
   return (
     <Glyph {...props}>

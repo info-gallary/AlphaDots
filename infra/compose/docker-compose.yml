@@ -241,6 +241,9 @@ services:
     environment:
       <<: *python-env
       ALPHADOTS_METRICS_PORT: "0"
+      # Exits before Prometheus could scrape it, so it pushes its metrics on exit. When the
+      # `obs` profile is not running the push fails fast and only logs a warning.
+      ALPHADOTS_PUSHGATEWAY_URL: ${ALPHADOTS_PUSHGATEWAY_URL:-http://pushgateway:9091}
 
   web:
     profiles: ["ui"]
@@ -297,8 +300,33 @@ services:
           cpus: "0.50"
           memory: 512M
 
+  # Holds the last metrics pushed by run-once jobs (ingestion) for Prometheus to scrape.
+  # Internal only: no published port.
+  pushgateway:
+    image: prom/pushgateway:v1.10.0
+    profiles: ["obs"]
+    restart: unless-stopped
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "wget -qO- http://127.0.0.1:9091/-/healthy || exit 1"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64M
+
   # Admin credentials below are local-dev defaults, not secrets, the same way
   # ALPHADOTS_PG_PASSWORD is; a deployed environment takes them from a secret store (M5).
+  # Anonymous access is read-only (Viewer) and the port binds to 127.0.0.1, so only this
+  # machine can open the dashboard without logging in; editing still needs `admin`.
   grafana:
     image: grafana/grafana:11.4.0
     profiles: ["obs"]
@@ -311,6 +339,9 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${ALPHADOTS_GRAFANA_PASSWORD:-admin}
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/alphadots-pipeline.json
     volumes:
       # grafana-data mounts at the image's own default VOLUME path, so the empty named
       # volume inherits that path's ownership (grafana user, uid 472) from the image layer -

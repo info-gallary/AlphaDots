@@ -8,7 +8,15 @@ import { formatMinute, formatTime } from "@/lib/format";
 import { useTheme, type Theme } from "@/lib/useTheme";
 
 import { useAppState } from "./AppState";
-import { BrandMark, IssuersGlyph, OverviewGlyph, ResearchGlyph, SystemGlyph, TapeGlyph } from "./icons";
+import {
+  BacktestGlyph,
+  BrandMark,
+  IssuersGlyph,
+  OverviewGlyph,
+  ResearchGlyph,
+  SystemGlyph,
+  TapeGlyph,
+} from "./icons";
 import { StatusTag } from "./primitives";
 
 const NAV = [
@@ -16,6 +24,7 @@ const NAV = [
   { href: "/tape", label: "Event tape", Glyph: TapeGlyph },
   { href: "/issuers", label: "Issuers", Glyph: IssuersGlyph },
   { href: "/research", label: "Research", Glyph: ResearchGlyph },
+  { href: "/backtest", label: "Backtest", Glyph: BacktestGlyph },
   { href: "/system", label: "Pipeline", Glyph: SystemGlyph },
 ] as const;
 

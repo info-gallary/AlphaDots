@@ -11,8 +11,8 @@ SPEED ?= 0
 ARGS ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup up seed replay smoke agents agent-smoke ui obs down dev dev-agent web web-build \
-        test test-integration lint security fixtures snapshot schemas benchmark k8s-up \
+.PHONY: help setup up seed replay smoke agents agent-smoke ui obs demo down dev dev-agent web web-build \
+        test test-integration lint security fixtures research snapshot schemas benchmark k8s-up \
         k8s-smoke k8s-down
 
 help:              ## List tasks
@@ -45,6 +45,9 @@ ui:                ## Start the dashboard container on :13000
 obs:               ## Start Prometheus + Grafana on :13001
 	$(TASK) obs
 
+demo:              ## Start everything and generate traffic so every dashboard has data
+	$(TASK) demo
+
 down:              ## Stop the platform (ARGS=--volumes also deletes data)
 	$(TASK) down -- $(ARGS)
 
@@ -74,6 +77,9 @@ security:          ## Dependency audit and secret scan
 
 fixtures:          ## Regenerate replay fixture and manifest
 	$(TASK) fixtures
+
+research:          ## Re-run the simulation study (Backtest page data and docs/research report)
+	$(TASK) research
 
 snapshot:          ## Re-export the dashboard snapshot and parity goldens
 	$(TASK) snapshot

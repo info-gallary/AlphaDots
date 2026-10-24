@@ -146,6 +146,24 @@ def obs(_extra: list[str]) -> None:
     run(*COMPOSE, "--profile", "core", "--profile", "obs", "up", "--detach", "--build", "--wait")
 
 
+def demo(_extra: list[str]) -> None:
+    """Start everything, replay the news and drive the agent, so every dashboard has data."""
+    run(
+        *COMPOSE, "--profile", "core", "--profile", "agents", "--profile", "ui", "--profile", "obs",
+        "up", "--detach", "--build", "--wait",
+    )  # fmt: skip
+    run(*INGEST, "--fixture", "news/seed.jsonl")
+    # About a minute of live flow, so the throughput and latency panels have something to plot.
+    run(*INGEST, "--fixture", "news/replay.jsonl", "--speed", "20000")
+    run("uv", "run", "python", "-m", "scripts.demo_traffic", "--base-url", API_URL)
+    print(
+        "\nDashboard   http://localhost:13000"
+        "\nAPI docs    http://localhost:18000/docs"
+        "\nGrafana     http://localhost:13001  (opens read-only; admin/admin to edit)"
+        "\nPrometheus  http://localhost:19090/targets"
+    )
+
+
 def _k3d_cluster_exists() -> bool:
     executable = shutil.which("k3d")
     if executable is None:
@@ -304,6 +322,7 @@ def lint(_extra: list[str]) -> None:
     run("uv", "run", "python", "-m", "scripts.export_schemas", "--check")
     run("uv", "run", "python", "-m", "scripts.generate_fixtures", "--check")
     run("uv", "run", "python", "-m", "scripts.export_snapshot", "--check")
+    run("uv", "run", "python", "-m", "scripts.run_research", "--check")
     run("pnpm", "lint", cwd=ROOT / "web")
     run("pnpm", "typecheck", cwd=ROOT / "web")
 
@@ -376,6 +395,11 @@ def fixtures(_extra: list[str]) -> None:
     run("uv", "run", "python", "-m", "scripts.generate_fixtures")
 
 
+def research(_extra: list[str]) -> None:
+    """Re-run the simulation study: rewrites the Backtest page data and docs/research report."""
+    run("uv", "run", "python", "-m", "scripts.run_research")
+
+
 def snapshot(_extra: list[str]) -> None:
     """Re-export the dashboard's read-model snapshot and its parity goldens."""
     run("uv", "run", "python", "-m", "scripts.export_snapshot")
@@ -402,6 +426,7 @@ TASKS: dict[str, Callable[[list[str]], None]] = {
     "agent-smoke": agent_smoke,
     "ui": ui,
     "obs": obs,
+    "demo": demo,
     "down": down,
     "k8s-up": k8s_up,
     "k8s-smoke": k8s_smoke,
@@ -414,6 +439,7 @@ TASKS: dict[str, Callable[[list[str]], None]] = {
     "lint": lint,
     "security": security,
     "fixtures": fixtures,
+    "research": research,
     "snapshot": snapshot,
     "web-build": web_build,
     "schemas": schemas,

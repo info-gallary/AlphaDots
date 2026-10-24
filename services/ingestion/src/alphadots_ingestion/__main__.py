@@ -12,6 +12,7 @@ from pathlib import Path
 
 from alphadots_common.config import Settings
 from alphadots_common.logging import configure_logging, get_logger
+from alphadots_common.metrics import push_metrics
 from alphadots_common.service import make_bus
 from alphadots_ingestion.adapters import FixtureReplayAdapter, MergedAdapter
 from alphadots_ingestion.replay import SERVICE, replay
@@ -61,6 +62,13 @@ async def _run(args: argparse.Namespace, settings: Settings) -> None:
         )
     finally:
         await bus.stop()
+        # A run-once job exits before Prometheus can scrape it, so it pushes instead, keyed
+        # by fixture set so replaying one file does not erase the last run of another.
+        fixtures = ",".join(str(fixture) for fixture in args.fixture)
+        if settings.pushgateway_url and not push_metrics(
+            SERVICE, settings.pushgateway_url, {"fixtures": fixtures}
+        ):
+            log.warning("metrics_push_failed", gateway=settings.pushgateway_url)
     log.info(
         "replay_finished",
         fixtures=[str(fixture) for fixture in args.fixture],

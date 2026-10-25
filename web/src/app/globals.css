@@ -2470,6 +2470,96 @@ select {
   gap: 8px;
 }
 
+/* ---------------------------------------------------------------- earnings */
+
+/* Tone thirds use the diverging polarity pair; the middle third stays neutral grey. */
+.path-line {
+  fill: none;
+  stroke: var(--mark-muted);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.path-band {
+  fill: var(--mark-muted);
+  opacity: 0.13;
+}
+
+.path-dot {
+  fill: var(--mark-muted);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.path-line[data-tone="pos"] {
+  stroke: var(--pos);
+}
+
+.path-line[data-tone="neg"] {
+  stroke: var(--neg);
+}
+
+.path-band[data-tone="pos"],
+.path-dot[data-tone="pos"] {
+  fill: var(--pos);
+}
+
+.path-band[data-tone="neg"],
+.path-dot[data-tone="neg"] {
+  fill: var(--neg);
+}
+
+.bar[data-tone="neutral"] {
+  fill: var(--mark-muted);
+}
+
+.whisker {
+  stroke: var(--ink-2);
+  stroke-width: 1.5;
+}
+
+.share-row {
+  grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) 7ch 4ch;
+}
+
+.share-row .funnel-value {
+  font-size: 15px;
+}
+
+.criteria {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.criteria li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 13px;
+}
+
+.criteria .num {
+  color: var(--ink-2);
+}
+
+.source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.source-list strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
 /* --------------------------------------------------------------- responsive */
 
 @media (max-width: 1100px) {
@@ -2550,6 +2640,20 @@ select {
   .funnel-drop {
     grid-column: 2 / 4;
     text-align: left;
+  }
+
+  .share-row {
+    grid-template-columns: minmax(0, 1fr) 7ch 4ch;
+  }
+
+  .share-row .funnel-track {
+    grid-column: 1 / 4;
+  }
+
+  .share-row .funnel-drop {
+    grid-column: auto;
+    grid-row: 1;
+    text-align: right;
   }
 
   .board-row {

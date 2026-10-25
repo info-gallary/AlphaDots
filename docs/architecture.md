@@ -94,6 +94,31 @@ evidence weight are configured priors, not estimates. Every signal says so in
 says so next to every score. Return labels, walk-forward validation and any claim of
 predictive value belong to M3.
 
+## Offline research
+
+Training and evaluation are offline jobs, not services. `research/` holds two studies:
+
+- **Simulation study** (`alphadots_research.study`): a synthetic market with a planted
+  effect and a null twin, used to show the evaluation finds real effects, stays silent
+  on none, and that a look-ahead bug manufactures returns. It calls the live
+  `decayed_sentiment`, so the point-in-time guard under test is the production one.
+- **Earnings study** (`alphadots_research.earnings`): real SEC 8-K press releases, timed
+  to EDGAR's acceptance second, against daily returns. The plan is
+  [pre-registered](research/earnings-tone-preregistration.md). `make earnings-data`
+  downloads through a rate-limited, caching client into `var/research` (gitignored);
+  `make earnings-study` runs fully offline from that cache and writes only aggregates to
+  `web/src/data/earnings-study.json`.
+
+```text
+EDGAR submissions ─▶ 8-K Item 2.02 ─▶ EX-99 text ─▶ LM tone ─▶ tone surprise (own history)
+EDGAR acceptance time ─▶ day 0 = first close after publication
+Yahoo closes + Fama-French factors ─▶ abnormal returns ─▶ CARs, regressions, portfolio
+```
+
+The same availability rule as the live pipeline applies: a release can only be acted on
+at a close after EDGAR accepted it. The study runs the date-only timing too, to measure
+what ignoring that rule would have reported.
+
 ## The dashboard
 
 `web/` is Next.js (App Router, TypeScript, no UI framework). The browser only calls the
@@ -113,14 +138,17 @@ colours always come with a glyph and a label.
 | Event tape (`/tape`) | Every accepted item, newest first, with provenance and availability times. |
 | Issuers (`/issuers`) | Latest score and path per issuer, filterable by market (replay universe, NSE India). |
 | Research (`/research`) | The research agent's brief for an issuer: cited bull and bear cases, abstention, run telemetry. |
+| Earnings study (`/earnings`) | The real-data study: abnormal returns around releases by tone surprise, the pre-registered tests and decision, the timing trap, sample construction and provenance. |
+| Backtest (`/backtest`) | The simulation study: planted vs null world, walk-forward folds, costs, the look-ahead control. |
 | Pipeline (`/system`) | Stage throughput, the monitor agent's findings, the dead-letter queue, milestones. |
 
 Every chart has a table view, so no value is reachable only by hovering.
 
 ## What is not built yet
 
-Market data and features (M3), FinBERT (M2), the SEC adapter and watermark policy (M1),
-and benchmarks (M6). Kubernetes is linted and templated but no live k3d cluster has run
+Streaming market data and live features (M3; the earnings study uses daily closes
+offline), FinBERT (M2), a streaming SEC adapter and watermark policy (M1; the earnings
+study's EDGAR client is batch and offline), and benchmarks (M6). Kubernetes is linted and templated but no live k3d cluster has run
 on the development machine (see the threat model's known gaps), and the AWS Terraform has
 been validated, never applied. `scripts/tasks.py` lists the specification's `make`
 targets that do not exist yet, rather than stubbing them.

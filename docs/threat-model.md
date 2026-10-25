@@ -57,6 +57,15 @@ real data, and updated every time that answer would change.
 | Data poisoning: a feedback loop where agent output becomes future evidence | Impossible by construction — the agent only *reads* `/v1/events`, `/v1/signals`, `/v1/overview`; it has no write path into any upstream topic | None |
 | Cross-tenant exposure | No multi-tenancy exists; single shared database per environment | Out of scope until a multi-tenant deployment is planned |
 
+### Offline research downloads (earnings study)
+
+| Threat | Mitigation | Gap |
+|---|---|---|
+| Tampering: a malicious filing or exhibit (hostile HTML, huge documents) | Exhibits are only parsed to plain text and counted; nothing is executed, rendered or sent to a model; the dashboard receives aggregates only | No byte-size cap before parsing; fine for EDGAR, required before adding untrusted sources |
+| Licence breach: redistributing provider data | Raw downloads live in gitignored `var/research`; the committed JSON holds statistics over thousands of events, never a stock's prices or a release's text (a test asserts no per-stock series leave `analyse`) | Yahoo's terms do not permit automated download at all; used at the owner's explicit choice and documented in `docs/data-licenses.md`. Swap in a licensed provider before any non-personal use |
+| Abuse of a provider (rate limits) | One declared identity, a shared per-provider schedule (8/s for SEC, 1/s elsewhere) across worker threads, backoff with jitter, and a persistent 429 stops the run | None known |
+| Credential leakage | The SEC contact lives in `.env` (gitignored, excluded from images); Yahoo and other sources get a generic User-Agent without it | None known |
+
 ### Infrastructure (Docker, compose, Terraform, Kubernetes)
 
 | Threat | Mitigation | Gap |

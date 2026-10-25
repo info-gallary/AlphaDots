@@ -1,9 +1,15 @@
 [project]
 name = "alphadots-research"
 version = "0.1.0"
-description = "Offline AlphaDots research: a simulation study of the decayed-sentiment signal under leakage-safe walk-forward evaluation."
+description = "Offline AlphaDots research: a simulation study of the decayed-sentiment signal, and a real-data study of earnings press-release tone."
 requires-python = ">=3.12"
-dependencies = ["alphadots-quant", "numpy>=2.1,<3"]
+dependencies = [
+    "alphadots-quant",
+    "alphadots-sentiment",
+    "httpx>=0.27",
+    "numpy>=2.1,<3",
+    "tzdata>=2024.1",
+]
 
 [build-system]
 requires = ["hatchling"]

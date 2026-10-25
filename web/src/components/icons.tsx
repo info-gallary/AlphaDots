@@ -86,6 +86,17 @@ export function BacktestGlyph(props: GlyphProps) {
   );
 }
 
+/** A page of text with a rising mark: words turned into a measured result. */
+export function EarningsGlyph(props: GlyphProps) {
+  return (
+    <Glyph {...props}>
+      <rect x={2.5} y={1.75} width={9} height={12.5} rx={1.6} stroke="currentColor" strokeWidth={1.3} />
+      <path d="M5 5.5h4M5 8h2.5" stroke="currentColor" strokeWidth={1.3} strokeLinecap="round" />
+      <circle cx={12.6} cy={11.6} r={2.4} fill="currentColor" />
+    </Glyph>
+  );
+}
+
 export function ResearchGlyph(props: GlyphProps) {
   return (
     <Glyph {...props}>

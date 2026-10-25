@@ -10,7 +10,7 @@ import { ChartCard } from "./charts";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-function pct(value: number, digits = 1): string {
+export function pct(value: number, digits = 1): string {
   return `${formatSigned(value * 100, digits)}%`;
 }
 
@@ -22,7 +22,7 @@ function niceStep(span: number, count: number): number {
   return unit * power;
 }
 
-function ticks(min: number, max: number, count: number): number[] {
+export function ticks(min: number, max: number, count: number): number[] {
   const step = niceStep(max - min, count);
   const out: number[] = [];
   for (let tick = Math.ceil(min / step) * step; tick <= max + step / 1e6; tick += step) {

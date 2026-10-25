@@ -56,8 +56,22 @@ a test pins that weakness so it is never mistaken for robustness.
 `web/src/data/snapshot.json` is derived entirely from the fixtures above by
 `scripts/export_snapshot.py`, so the same CC0 dedication applies.
 
-## Real data
+## Real data (the earnings study)
 
-No real market data, news or filings are used or committed. Adapters for permitted
-sources (SEC EDGAR within its access policy) start in M1, with provider terms recorded
-here before any data is fetched.
+The live pipeline and its fixtures still use no real data. The offline earnings study
+(`research/src/alphadots_research/earnings`, plan in
+[`research/earnings-tone-preregistration.md`](research/earnings-tone-preregistration.md))
+downloads real data with `make earnings-data` into `var/research/`, which is gitignored.
+**No raw real data is committed.** What is committed is `web/src/data/earnings-study.json`
+and the generated report: statistics over thousands of events (regression coefficients,
+averages by tercile, portfolio returns), never a single stock's prices or a release's text.
+
+| Source | What | Terms, and how the project complies |
+|---|---|---|
+| SEC EDGAR (`data.sec.gov`, `www.sec.gov`) | Submissions, 8-K filing indexes and EX-99 press releases, XBRL frames | US government works, no copyright. The [fair-access policy](https://www.sec.gov/os/accessing-edgar-data) asks for a declared User-Agent with a contact and at most 10 requests per second. The downloader sends `ALPHADOTS_SEC_USER_AGENT` (set in `.env`, never committed) and stays at or under 8 per second across all threads. |
+| Yahoo Finance chart endpoint | Daily split- and dividend-adjusted closes | **Not licensed for automated download or redistribution.** Used at the project owner's explicit choice (2026-10-26) instead of a free licensed key. Kept on the local machine, rate-limited to one request per second, never redistributed; a persistent 429 stops the download. Replace `daily_bars` with a licensed provider (for example Tiingo, Polygon or CRSP via WRDS) before any other use. |
+| Kenneth R. French data library | Daily market, FF5 and momentum factors | Free for research with citation: Fama and French (2015), Carhart (1997). |
+| Loughran-McDonald Master Dictionary 1993-2025 | Positive and negative word lists | Free for academic research; commercial use needs a licence. Downloaded at run time from the authors' link, never committed. Cite Loughran and McDonald (2011). |
+
+Price history exists only for firms still listed, so 61 of the 300 selected firms have
+no prices; the report counts them and treats the result as a statement about survivors.

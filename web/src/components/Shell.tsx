@@ -11,6 +11,7 @@ import { useAppState } from "./AppState";
 import {
   BacktestGlyph,
   BrandMark,
+  EarningsGlyph,
   IssuersGlyph,
   OverviewGlyph,
   ResearchGlyph,
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/tape", label: "Event tape", Glyph: TapeGlyph },
   { href: "/issuers", label: "Issuers", Glyph: IssuersGlyph },
   { href: "/research", label: "Research", Glyph: ResearchGlyph },
+  { href: "/earnings", label: "Earnings study", Glyph: EarningsGlyph },
   { href: "/backtest", label: "Backtest", Glyph: BacktestGlyph },
   { href: "/system", label: "Pipeline", Glyph: SystemGlyph },
 ] as const;

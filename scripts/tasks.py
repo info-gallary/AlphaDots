@@ -400,6 +400,17 @@ def research(_extra: list[str]) -> None:
     run("uv", "run", "python", "-m", "scripts.run_research")
 
 
+def earnings_data(_extra: list[str]) -> None:
+    """Download filings, prices, factors and the LM dictionary for the earnings study
+    (needs ALPHADOTS_SEC_USER_AGENT; cached in var/research, resumable)."""
+    run("uv", "run", "python", "-m", "scripts.fetch_earnings_data")
+
+
+def earnings_study(_extra: list[str]) -> None:
+    """Run the pre-registered earnings-tone study offline from the download cache."""
+    run("uv", "run", "python", "-m", "scripts.run_earnings_study")
+
+
 def snapshot(_extra: list[str]) -> None:
     """Re-export the dashboard's read-model snapshot and its parity goldens."""
     run("uv", "run", "python", "-m", "scripts.export_snapshot")
@@ -440,6 +451,8 @@ TASKS: dict[str, Callable[[list[str]], None]] = {
     "security": security,
     "fixtures": fixtures,
     "research": research,
+    "earnings-data": earnings_data,
+    "earnings-study": earnings_study,
     "snapshot": snapshot,
     "web-build": web_build,
     "schemas": schemas,

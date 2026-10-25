@@ -11,9 +11,9 @@ const MONITOR_REFRESH_MS = 20_000;
 
 const ROADMAP = [
   { id: "M0", state: "built", text: "Contracts, fixture replay, dedup and issuer linking, lexicon sentiment, decay heuristic, API, dashboard." },
-  { id: "M1", state: "next", text: "SEC-compatible adapter, watermark policy for late data, consumer-lag metrics." },
+  { id: "M1", state: "next", text: "Streaming SEC adapter in the live pipeline (a batch EDGAR client already feeds the earnings study), watermark policy, consumer-lag metrics." },
   { id: "M2", state: "planned", text: "FinBERT baseline with calibration and a labelled evaluation sample." },
-  { id: "M3", state: "planned", text: "Market data, purged walk-forward validation, cost-aware backtests, untouched holdout." },
+  { id: "M3", state: "partial", text: "Offline: a pre-registered real-data earnings study with holdout and costs, and a purged walk-forward simulation. Not yet: LightGBM, MLflow, live market features." },
   { id: "M4", state: "built", text: "Bounded LangGraph research agent and pipeline monitor, claim-level citations, abstention." },
   { id: "M5", state: "built", text: "Docker, Helm chart, Terraform for AWS (validated, not applied), CI/CD gates, six scanners, SBOM, Prometheus and Grafana." },
   { id: "M6", state: "planned", text: "Measured latency and throughput benchmarks on recorded hardware." },

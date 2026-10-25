@@ -190,8 +190,9 @@ def _learned(results: dict[str, Any]) -> list[str]:
         f"**Date-only timing flatters the result.** {early_share} of releases came after the "
         f"close but carry that day's date. Trading them at that date's close, before the news "
         f"was public, gives a development Sharpe of {_num(naive_dev['sharpe'])} against "
-        f"{_num(dev['sharpe'])} with honest timing: "
-        f"{_num(naive_dev['sharpe'] - dev['sharpe'])} of Sharpe that is pure look-ahead."
+        f"{_num(dev['sharpe'])} with honest timing, a gap of "
+        f"{_num(naive_dev['sharpe'] - dev['sharpe'])}. Part of it is the honest rule's extra "
+        f"day of waiting; the rest comes from trading before the news was public."
     )
     lexicon = explore("Reaction, pipeline lexicon surprise")
     learned.append(

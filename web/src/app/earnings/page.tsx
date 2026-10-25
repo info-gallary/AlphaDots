@@ -76,8 +76,8 @@ export default function EarningsPage() {
     },
     {
       tone: "critical" as const,
-      title: "Date-only timing invents returns",
-      text: `${formatNumber(timing.naive_early)} of ${formatNumber(timing.events)} releases came out after the close but carry that day's date. Trading them at that close shows a net Sharpe of ${formatSigned(naiveDev.sharpe)}, against ${formatSigned(dev.sharpe)} with honest timing.`,
+      title: "Date-only timing flatters the result",
+      text: `${formatNumber(timing.naive_early)} of ${formatNumber(timing.events)} releases came out after the close but carry that day's date. Trading at that close, before the news was public, shows a net Sharpe of ${formatSigned(naiveDev.sharpe)}, against ${formatSigned(dev.sharpe)} with honest timing.`,
     },
   ];
 

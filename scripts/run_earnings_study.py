@@ -26,6 +26,7 @@ from scripts.run_research import _clean, _num
 RESULTS = ROOT / "web" / "src" / "data" / "earnings-study.json"
 REPORT = ROOT / "docs" / "research" / "earnings-tone-study.md"
 PREREGISTRATION = "docs/research/earnings-tone-preregistration.md"
+SESSION_ORDER = ("pre-market", "market hours", "after close", "non-trading day")
 SOURCES = [
     {
         "name": "SEC EDGAR",
@@ -92,10 +93,121 @@ def _portfolio_row(label: str, s: dict[str, Any]) -> str:
     )
 
 
+def _criteria(decision: dict[str, Any], dev: dict[str, Any]) -> tuple[str, str]:
+    """The decision table with each criterion's value, and a note when a criterion is met
+    in a way its label does not suggest."""
+    criteria_values = []
+    for index, c in enumerate(decision["criteria"]):
+        value = c["value"]
+        if value is None:
+            criteria_values.append("n/a")
+        elif index == 0:
+            criteria_values.append(f"t = {_num(value, 2)}")
+        elif index == 1:
+            criteria_values.append(f"holdout {_bps(value)} bps")
+        else:
+            criteria_values.append(f"[{_num(value[0])}, {_num(value[1])}]")
+    criteria_rows = "\n".join(
+        f"| {c['label']} | {'yes' if c['passed'] else 'no'} | {shown} |"
+        for c, shown in zip(decision["criteria"], criteria_values, strict=True)
+    )
+    sharpe_note = ""
+    if decision["criteria"][-1]["passed"] and dev["sharpe_ci_high"] < 0:
+        sharpe_note = (
+            "\nThe Sharpe interval excludes zero on the negative side: net of costs the strategy "
+            "reliably lost money. The rule is reported exactly as written.\n"
+        )
+    return criteria_rows, sharpe_note
+
+
+def _learned(results: dict[str, Any]) -> list[str]:
+    """The findings, worded from the numbers so the text can never drift from them."""
+    plan, port, timing = results["plan"], results["portfolio"], results["timing"]
+    agreement = results["tone_agreement"]
+    dev, naive_dev = port["primary"]["development"], port["naive"]["development"]
+    h1d = results["confirmatory"]["h1"]["development"]
+    h2d, h2h = (
+        results["confirmatory"]["h2"]["development"],
+        results["confirmatory"]["h2"]["holdout"],
+    )
+    early_share = _num(timing["naive_early"] / max(timing["events"], 1), 0, signed=False, pct=True)
+
+    def explore(label: str) -> dict[str, Any] | None:
+        row = next((r for r in results["exploratory"] if r["label"] == label), None)
+        return None if row is None else row["development"]
+
+    gross = next((c["sharpe"] for c in port["costs"] if c["bps"] == 0), None)
+    drag = dev["turnover"] * plan["cost_bps"] / 10_000 * 252
+    learned = []
+    if h1d is not None and h1d["key"]["t"] > 2:
+        learned.append(
+            f"**The words carry news.** A one-standard-deviation more positive tone surprise "
+            f"comes with a {_bps(h1d['key']['coef'])} bps higher two-day abnormal return "
+            f"(t = {_num(h1d['key']['t'], 1)}, development sample; the holdout agrees). Yet "
+            f"tone explains only {_num(h1d['r2'], 1, signed=False, pct=True)} of the variance "
+            f"of the reaction: the numbers in a release matter far more than its words."
+        )
+    else:
+        learned.append(
+            "**The tone measure barely registers at the announcement** (t below 2), which "
+            "limits what it can say about the drift that follows."
+        )
+    if h2d is not None and h2d["key"]["t"] > 2:
+        learned.append(
+            f"**Tone predicts the following month in development** "
+            f"({_bps(h2d['key']['coef'])} bps per s.d., t = {_num(h2d['key']['t'], 1)}); "
+            f"the holdout shows {_bps(h2h['key']['coef']) if h2h else 'n/a'} bps "
+            f"(t = {_num(h2h['key']['t'], 1) if h2h else 'n/a'})."
+        )
+    elif h2d is not None:
+        ff = explore("Drift, 6-factor abnormal returns")
+        direction = (
+            "negative: if anything a partial reversal of the reaction, not an under-reaction. "
+            "That direction matches work on tone management (Huang, Teoh and Zhang, 2014), "
+            "where unusually upbeat releases are followed by weaker returns"
+            if h2d["key"]["coef"] < 0
+            else "positive but small"
+        )
+        learned.append(
+            f"**No reliable drift.** After controlling for the announcement return and the "
+            f"run-up, tone surprise predicts days +2 to +21 by {_bps(h2d['key']['coef'])} bps "
+            f"per s.d. (t = {_num(h2d['key']['t'], 1)}), short of the pre-registered t > 2. The "
+            f"point estimate is {direction}; the 6-factor version gives "
+            f"{_bps(ff['key']['coef']) if ff else 'n/a'} bps (t = "
+            f"{_num(ff['key']['t'], 1) if ff else 'n/a'}, exploratory). For these large US "
+            f"firms the words appear to be priced within about two days."
+        )
+    learned.append(
+        f"**Costs decide the trading test.** Before costs the long-short portfolio's "
+        f"development Sharpe is {_num(gross) if gross is not None else 'n/a'}. Rebalancing "
+        f"about {_num(dev['avg_longs'] + dev['avg_shorts'], 0, signed=False)} positions every "
+        f"day trades {_num(dev['turnover'], 2, signed=False)} of the book a day, roughly "
+        f"{_num(drag, 0, signed=False, pct=True)} a year at {plan['cost_bps']:g} bps, which "
+        f"takes it to {_num(dev['sharpe'])}. Holding positions without daily rebalancing would "
+        f"trade far less; that design was not pre-registered, so it is left for a new study."
+    )
+    learned.append(
+        f"**Date-only timing flatters the result.** {early_share} of releases came after the "
+        f"close but carry that day's date. Trading them at that date's close, before the news "
+        f"was public, gives a development Sharpe of {_num(naive_dev['sharpe'])} against "
+        f"{_num(dev['sharpe'])} with honest timing: "
+        f"{_num(naive_dev['sharpe'] - dev['sharpe'])} of Sharpe that is pure look-ahead."
+    )
+    lexicon = explore("Reaction, pipeline lexicon surprise")
+    learned.append(
+        f"**Two word lists agree.** The pipeline's own hand-written lexicon correlates "
+        f"{_num(agreement['pearson'], 2)} with Loughran-McDonald tone, and its tone surprise "
+        f"also relates to the reaction (t = "
+        f"{_num(lexicon['key']['t'], 1) if lexicon else 'n/a'}, exploratory), so the "
+        f"information-content result does not hinge on one dictionary."
+    )
+    return learned
+
+
 def report(results: dict[str, Any]) -> str:
     plan, funnel, port = results["plan"], results["funnel"], results["portfolio"]
     h1, h2 = results["confirmatory"]["h1"], results["confirmatory"]["h2"]
-    timing, agreement = results["timing"], results["tone_agreement"]
+    timing = results["timing"]
     sessions = timing["sessions"]
     total = sum(sessions.values()) or 1
     dev, hold = port["primary"]["development"], port["primary"]["holdout"]
@@ -111,8 +223,10 @@ def report(results: dict[str, Any]) -> str:
         f"{r['name']} ({_num(r['float_bn'], 0, signed=False)} bn)" for r in results["rejected"][:6]
     )
     session_rows = "\n".join(
-        f"| {name} | {count:,} | {_num(count / total, 1, signed=False, pct=True)} |"
-        for name, count in sessions.items()
+        f"| {name} | {sessions[name]:,} | "
+        f"{_num(sessions[name] / total, 1, signed=False, pct=True)} |"
+        for name in SESSION_ORDER
+        if name in sessions
     )
     tercile_rows = "\n".join(
         f"| {g['label']} | {g['n']:,} | {_bps(g['reaction']['mean'])} "
@@ -137,11 +251,7 @@ def report(results: dict[str, Any]) -> str:
         for v in port["variants"]
     )
     cost_rows = ", ".join(f"{_num(c['sharpe'])} at {c['bps']:g} bps" for c in port["costs"])
-    criteria_rows = "\n".join(
-        f"| {c['label']} | {'yes' if c['passed'] else 'no'} |" for c in decision["criteria"]
-    )
-    h1d, h2d, h2h = h1["development"], h2["development"], h2["holdout"]
-    early_share = _num(timing["naive_early"] / max(timing["events"], 1), 0, signed=False, pct=True)
+    criteria_rows, sharpe_note = _criteria(decision, dev)
     portfolio_header = (
         "| Portfolio | Period | Net return a year | Net Sharpe [95% CI] "
         "| 6-factor alpha a year | Max drawdown | Names long / short |"
@@ -153,45 +263,7 @@ def report(results: dict[str, Any]) -> str:
         else "the effect is not established in this sample."
     )
 
-    learned = []
-    if h1d is not None and h1d["key"]["t"] > 2:
-        learned.append(
-            f"**The words carry news.** A one-standard-deviation more positive tone surprise "
-            f"comes with a {_bps(h1d['key']['coef'])} bps higher two-day abnormal return "
-            f"(t = {_num(h1d['key']['t'], 1)}, development sample). Tone measured against the "
-            f"firm's own past releases is informative about the announcement."
-        )
-    else:
-        learned.append(
-            "**The tone measure barely registers at the announcement** (t below 2), which "
-            "limits what it can say about the drift that follows."
-        )
-    if h2d is not None and h2d["key"]["t"] > 2:
-        learned.append(
-            f"**Tone predicts the following month in development** "
-            f"({_bps(h2d['key']['coef'])} bps per s.d., t = {_num(h2d['key']['t'], 1)}); "
-            f"the holdout shows {_bps(h2h['key']['coef']) if h2h else 'n/a'} bps "
-            f"(t = {_num(h2h['key']['t'], 1) if h2h else 'n/a'})."
-        )
-    else:
-        learned.append(
-            f"**No reliable drift.** After controlling for the announcement return and the "
-            f"run-up, tone surprise predicts days +2 to +21 with a coefficient of "
-            f"{_bps(h2d['key']['coef']) if h2d else 'n/a'} bps per s.d. "
-            f"(t = {_num(h2d['key']['t'], 1) if h2d else 'n/a'}). For these large US firms "
-            f"in 2016-2023 the market appears to finish pricing the words within two days."
-        )
-    learned.append(
-        f"**Date-only timing manufactures returns.** {early_share} "
-        f"of releases came after the close but carry that day's date. Trading them at that "
-        f"date's close (before the news was public) gives a development Sharpe of "
-        f"{_num(naive_dev['sharpe'])}, against {_num(dev['sharpe'])} for the honest timing."
-    )
-    learned.append(
-        f"**The pipeline's headline lexicon is a weak instrument for long documents.** It "
-        f"correlates {_num(agreement['pearson'], 2)} with Loughran-McDonald tone and finds no "
-        f"tone words at all in {agreement['lexicon_silent']:,} of {agreement['n']:,} releases."
-    )
+    learned = _learned(results)
 
     return f"""# Earnings press-release tone and post-announcement returns
 
@@ -288,10 +360,10 @@ the primary variant's true Sharpe exceeds that is
 
 ## Decision (pre-registered rule)
 
-| Criterion | Met |
-|---|---|
+| Criterion | Met | Value |
+|---|---|---|
 {criteria_rows}
-
+{sharpe_note}
 **Verdict: {verdict}**
 
 ## What was learned
@@ -304,6 +376,8 @@ the primary variant's true Sharpe exceeds that is
   missing), so the sample leans towards survivors.
 - No analyst forecasts: the earnings surprise is controlled for only through the
   announcement return.
+- The pre-registered portfolio rebalances to equal weights daily, which makes turnover,
+  and so costs, high.
 - One dictionary-based tone measure for the confirmatory test; dictionaries miss context
   that a transformer model might catch.
 - Costs are a flat rate per dollar traded; no market impact or borrow costs.
@@ -318,6 +392,25 @@ uv run python -m scripts.run_earnings_study
 
 Downloads are cached in `var/research` (never committed). The analysis code is tested on
 synthetic panels with a planted effect and a null (`tests/research/earnings`).
+
+## References
+
+- Bailey, D. and López de Prado, M. (2014). The deflated Sharpe ratio. *Journal of
+  Portfolio Management*.
+- Bernard, V. and Thomas, J. (1989). Post-earnings-announcement drift: delayed price
+  response or risk premium? *Journal of Accounting Research*.
+- Cameron, A. C., Gelbach, J. and Miller, D. (2011). Robust inference with multiway
+  clustering. *Journal of Business and Economic Statistics*.
+- Carhart, M. (1997). On persistence in mutual fund performance. *Journal of Finance*.
+- Fama, E. and French, K. (2015). A five-factor asset pricing model. *Journal of Financial
+  Economics*.
+- Huang, X., Teoh, S. H. and Zhang, Y. (2014). Tone management. *The Accounting Review*.
+- Jegadeesh, N. and Wu, D. (2013). Word power: a new approach for content analysis.
+  *Journal of Financial Economics*.
+- Loughran, T. and McDonald, B. (2011). When is a liability not a liability? Textual
+  analysis, dictionaries, and 10-Ks. *Journal of Finance*.
+- Tetlock, P., Saar-Tsechansky, M. and Macskassy, S. (2008). More than words: quantifying
+  language to measure firms' fundamentals. *Journal of Finance*.
 """
 
 

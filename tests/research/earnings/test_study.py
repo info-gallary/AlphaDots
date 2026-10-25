@@ -8,6 +8,7 @@ see anything the honest timing cannot, except the announcement-day move it trade
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, date, datetime, timedelta
 
 import numpy as np
@@ -159,4 +160,4 @@ def test_report_renders_from_the_results(planted: dict) -> None:  # type: ignore
     text = report(results)
     assert "## Decision (pre-registered rule)" in text
     assert "Verdict:" in text
-    assert "nan" not in text.lower().replace("financial", "")
+    assert not re.search(r"\bnan\b", text, flags=re.IGNORECASE)

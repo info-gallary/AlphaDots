@@ -28,6 +28,13 @@ function sharpeWithCi(summary: PortfolioSummary): string {
   return `${formatSigned(summary.sharpe)} [${formatSigned(summary.sharpe_ci_low)}, ${formatSigned(summary.sharpe_ci_high)}]`;
 }
 
+/** Criteria in pre-registered order: drift t-stat, holdout coefficient, Sharpe interval. */
+function criterionValue(index: number, value: number | number[] | null): string {
+  if (value === null) return "n/a";
+  if (Array.isArray(value)) return `${formatSigned(value[0] ?? 0)} to ${formatSigned(value[1] ?? 0)}`;
+  return index === 0 ? `t = ${formatSigned(value)}` : `holdout ${bps(value, 1)} bps`;
+}
+
 function coefficient(fit: Fit | null): string {
   return fit === null ? "too few" : `${bps(fit.key.coef, 1)} bps (t ${formatSigned(fit.key.t, 1)})`;
 }
@@ -153,13 +160,22 @@ export default function EarningsPage() {
               The signal earns more work only if all three hold. The rule was written before the data was seen.
             </p>
             <ul className="criteria">
-              {decision.criteria.map((criterion) => (
+              {decision.criteria.map((criterion, index) => (
                 <li key={criterion.label}>
-                  <span>{criterion.label}</span>
+                  <span>
+                    {criterion.label}{" "}
+                    <span className="num">({criterionValue(index, criterion.value)})</span>
+                  </span>
                   <StatusTag tone={criterion.passed ? "good" : "critical"}>{criterion.passed ? "Met" : "Not met"}</StatusTag>
                 </li>
               ))}
             </ul>
+            {dev.sharpe_ci_high < 0 ? (
+              <p className="card-note" style={{ marginTop: 10 }}>
+                The Sharpe interval excludes zero on the negative side: net of costs the strategy reliably lost
+                money. The rule is shown exactly as it was written.
+              </p>
+            ) : null}
             <ul className="method-list" style={{ marginTop: 16 }}>
               <li>
                 <strong>Tone surprise.</strong> Loughran-McDonald net tone of the release text (tables removed),

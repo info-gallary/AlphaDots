@@ -8,6 +8,22 @@ moment it became knowable.
 
 ## What works today
 
+- **A pre-registered study on real data.** Does the tone of a company's quarterly
+  results press release predict its stock over the next month? 9,746 SEC 8-K earnings
+  releases (2016-2025) from 239 large US firms, each timed to the second EDGAR accepted
+  it. The 300 candidates were chosen by 2014 public float, so the selection does not
+  favour survivors; 61 have since been delisted and have no prices, which the report
+  counts.
+  Loughran-McDonald tone surprise, market and 6-factor abnormal returns, two-way clustered
+  regressions, a cost-aware long-short portfolio with Newey-West alpha, a deflated Sharpe
+  ratio over every variant tried, and a 2024-2025 holdout run once. The hypotheses were
+  [committed before any return was computed](docs/research/earnings-tone-preregistration.md).
+  **Result:** tone moves the two-day reaction (+27 bps per s.d., t = 4.4, holdout agrees)
+  but does not predict the following month (t = −1.8; the sign hints at a partial
+  reversal). The long-short trade is flat before costs and loses after them, and
+  trading on the filing date alone, ignoring after-hours timing, would have looked 0.9
+  of Sharpe better.
+  [Report](docs/research/earnings-tone-study.md).
 - **A typed, versioned event pipeline on Redpanda**: ingestion → preprocessing (markup
   stripping, exact dedup, effective-dated issuer resolution) → lexicon sentiment →
   decayed-sentiment signal → FastAPI read model.
@@ -28,8 +44,8 @@ moment it became knowable.
   Sharpe of +4.7. See the [study](docs/research/simulation-study.md).
 - **A research dashboard**: a market overview (signal leaderboard, tone mix, daily news
   flow, issuer × day heatmap, strongest headlines), the event tape with provenance
-  drill-down, issuer timelines, the research notebook, the backtest lab, and pipeline
-  monitoring. An as-of slider shows exactly what the system knew at any moment, and every
+  drill-down, issuer timelines, the research notebook, the earnings study, the backtest
+  lab, and pipeline monitoring. An as-of slider shows exactly what the system knew at any moment, and every
   chart has a table view.
 - **Deployable to Vercel as is.** With no backend attached, the dashboard serves the real
   pipeline's output, plus agent briefs recorded at export, from a parity-tested snapshot.
@@ -39,6 +55,8 @@ moment it became knowable.
   an SBOM, and a [threat model](docs/threat-model.md).
 
 ![Research notebook](docs/images/research.png)
+
+![Earnings study](docs/images/earnings.png)
 
 ![Backtest lab](docs/images/backtest.png)
 
@@ -88,11 +106,17 @@ Grafana opens the pipeline dashboard without a login (anonymous, read-only, boun
 `admin`). Run-once jobs such as ingestion push their metrics to a Prometheus Pushgateway,
 so the ingest panels stay filled after the job exits.
 
-**4. The research study**
+**4. The research studies**
 
 ```bash
-make research    # a few seconds; rewrites the backtest results and the report
+make research        # simulation study: a few seconds; rewrites the Backtest page data
+make earnings-data   # real data, once: about an hour, resumable, cached in var/research
+make earnings-study  # offline from the cache: about 20 s once text features are cached
 ```
+
+`make earnings-data` needs `ALPHADOTS_SEC_USER_AGENT="Your Name you@example.com"` in
+`.env` (SEC fair-access policy). Downloads are never committed; see
+[data and licences](docs/data-licenses.md) for each source's terms.
 
 Kubernetes: `make k8s-up`, `make k8s-smoke`, `make k8s-down` (k3d and Helm). Steps,
 rollback and the AWS path are in [`docs/deployment-runbook.md`](docs/deployment-runbook.md);
@@ -138,7 +162,8 @@ libs/common        bus (Kafka + in-memory), worker loop, config, logging, metric
 libs/quant         decayed-sentiment aggregate with the point-in-time guard
 libs/llm           bounded LLM adapter: Groq over plain httpx, deterministic mock for CI
 services/          ingestion · preprocessor · sentiment · signal_engine · api · research_agent
-research/          offline study: market simulation, walk-forward, metrics, deflated Sharpe
+research/          offline studies: simulation (walk-forward, deflated Sharpe) and the
+                   real-data earnings study (EDGAR client, event timing, clustered OLS)
 web/               Next.js dashboard (live proxy or bundled snapshot)
 data/fixtures/     synthetic news (CC0) plus the instrument master, hash-pinned by MANIFEST.json
 infra/compose      Docker Compose stack and throwaway integration stack
@@ -155,6 +180,9 @@ docs/              architecture, research report, threat model, runbooks, ADRs
 
 - [Architecture](docs/architecture.md): event flow, contracts, the availability model,
   delivery guarantees
+- [Earnings study](docs/research/earnings-tone-study.md) and its
+  [pre-registration](docs/research/earnings-tone-preregistration.md): real filings and
+  returns, what held up, what did not
 - [Simulation study](docs/research/simulation-study.md): method, results, what failed,
   and whether it justifies more work
 - [Data and licences](docs/data-licenses.md): what the fixtures contain and why each seed
@@ -170,7 +198,11 @@ docs/              architecture, research report, threat model, runbooks, ADRs
 
 - The sentiment model is a small hand-written lexicon. It is easy to fool; one fixture
   shows a prompt-injection sentence raising its score.
-- The backtest runs on a synthetic market. It shows the evaluation can tell a real
+- The earnings study uses Yahoo prices, which are not licensed for automated download;
+  that was the owner's choice, the data stays local, and only aggregates are published.
+  Prices exist only for firms still listed (61 of 300 are missing), so the results
+  describe survivors. Swap `daily_bars` for a licensed source before any other use.
+- The simulation backtest runs on a synthetic market. It shows the evaluation can tell a real
   effect from none; it says nothing about real returns. Even in the planted world the
   daily-rebalanced strategy is not robustly profitable after 10 bps costs (net Sharpe 95%
   interval −0.64 to +3.13, deflated Sharpe probability 0.54). The live signal engine still
@@ -182,6 +214,6 @@ docs/              architecture, research report, threat model, runbooks, ADRs
 - The Helm chart is linted and templated, but `k3d cluster create` could not run on the
   development machine (it cannot reach ghcr.io for k3d's helper image). The AWS
   Terraform passes `validate` and has never been applied.
-- Not yet built: the SEC adapter (M1), FinBERT (M2), real market data, LightGBM and
-  MLflow (M3), and benchmarks (M6). The matching `make` targets fail with the milestone that owns them
-  instead of pretending.
+- Not yet built: a streaming SEC adapter in the live pipeline (M1), FinBERT (M2), live
+  market data, LightGBM and MLflow (M3), and benchmarks (M6). The matching `make`
+  targets fail with the milestone that owns them instead of pretending.

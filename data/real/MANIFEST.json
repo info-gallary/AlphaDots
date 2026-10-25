@@ -1,0 +1,17 @@
+{
+ "generated_by": "scripts/capture_edgar.py",
+ "window": [
+  "2026-01-01",
+  "2026-10-23"
+ ],
+ "files": {
+  "instruments.json": {
+   "sha256": "46216c12475dacd7394c9424b215f30b7738db07d4822eab1e01ec915649c11d",
+   "bytes": 14938
+  },
+  "news/edgar.jsonl": {
+   "sha256": "0d046b728604e36416757c8c67a69ce64d2b0ca44d45b83162f87fd03a70f201",
+   "bytes": 740816
+  }
+ }
+}

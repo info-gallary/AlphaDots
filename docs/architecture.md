@@ -94,6 +94,21 @@ evidence weight are configured priors, not estimates. Every signal says so in
 says so next to every score. Return labels, walk-forward validation and any claim of
 predictive value belong to M3.
 
+## Datasets
+
+Every service reads its instrument master and news files from one dataset directory,
+`ALPHADOTS_FIXTURES_DIR`, so the same code runs on either:
+
+- `data/fixtures/`: synthetic and deterministic, one line per behaviour to exercise. The
+  tests, `make seed` and `make smoke` use it. Feed mode `simulated`.
+- `data/real/`: SEC EDGAR 8-K and 6-K filings for 45 real companies, captured by
+  `make capture` through the same polite, cached EDGAR client the earnings study uses.
+  `make demo` and the Vercel snapshot use it. Feed mode `delayed`, because it is a
+  backfill from the archive; a live EDGAR poller would make it `live`.
+
+The ingestion adapter does not care which: both are replayed in arrival order with their
+recorded times, so a replay is byte-identical every time.
+
 ## Offline research
 
 Training and evaluation are offline jobs, not services. `research/` holds two studies:

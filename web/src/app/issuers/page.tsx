@@ -6,20 +6,20 @@ import { useState } from "react";
 import { useAppState } from "@/components/AppState";
 import { ErrorState, Loading, Sparkline, StanceTag } from "@/components/primitives";
 import { formatSigned } from "@/lib/format";
-import { MARKET_LABEL, marketOf, type Market } from "@/lib/market";
+import { MARKET_LABEL, MARKET_ORDER, marketOf, type Market } from "@/lib/market";
 import type { OverviewResponse } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
-
-const FILTERS: { value: Market | "all"; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "replay", label: MARKET_LABEL.replay },
-  { value: "nse", label: MARKET_LABEL.nse },
-];
 
 export default function IssuersPage() {
   const { asOf, refreshMs } = useAppState();
   const [market, setMarket] = useState<Market | "all">("all");
   const overview = useApi<OverviewResponse>("v1/overview", { as_of: asOf }, { refreshMs });
+  // Offer a filter only for the markets the loaded dataset actually covers.
+  const present = new Set((overview.data?.instruments ?? []).map(({ instrument }) => marketOf(instrument.instrument_id)));
+  const FILTERS: { value: Market | "all"; label: string }[] = [
+    { value: "all", label: "All" },
+    ...MARKET_ORDER.filter((value) => present.has(value)).map((value) => ({ value, label: MARKET_LABEL[value] })),
+  ];
   // Issuers with news first (busiest first), then the ones still awaiting a source.
   const instruments = (overview.data?.instruments ?? [])
     .filter(({ instrument }) => market === "all" || marketOf(instrument.instrument_id) === market)

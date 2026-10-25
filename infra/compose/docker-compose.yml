@@ -28,6 +28,7 @@ x-python-service: &python-service
   stop_grace_period: 20s
   volumes:
     - ../../data/fixtures:/app/data/fixtures:ro
+    - ../../data/real:/app/data/real:ro
   depends_on:
     redpanda-init:
       condition: service_completed_successfully
@@ -43,7 +44,10 @@ x-python-env: &python-env
   ALPHADOTS_BUS_BACKEND: kafka
   ALPHADOTS_KAFKA_BOOTSTRAP: redpanda:9092
   ALPHADOTS_DATABASE_URL: postgresql+asyncpg://alphadots:${ALPHADOTS_PG_PASSWORD:-alphadots-local-dev}@postgres:5432/alphadots
-  ALPHADOTS_FIXTURES_DIR: /app/data/fixtures
+  # `fixtures` (synthetic, deterministic: make up/seed/smoke) or `real` (SEC EDGAR
+  # filings: make demo). Feed mode labels the data in every API response.
+  ALPHADOTS_FIXTURES_DIR: /app/data/${ALPHADOTS_DATASET:-fixtures}
+  ALPHADOTS_FEED_MODE: ${ALPHADOTS_FEED_MODE:-simulated}
   ALPHADOTS_METRICS_PORT: "9100"
   ALPHADOTS_LOG_LEVEL: ${ALPHADOTS_LOG_LEVEL:-INFO}
   ALPHADOTS_STAGE_LATENCY_ALLOWANCE_SECONDS: ${ALPHADOTS_STAGE_LATENCY_ALLOWANCE_SECONDS:-1.0}

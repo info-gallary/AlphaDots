@@ -1,0 +1,778 @@
+{
+ "version": "sec-edgar-2026-10-23",
+ "license": "Real issuers. Names, CIKs, SIC sectors and tickers from SEC EDGAR (public records); NSE symbols for the five Indian issuers that file with the SEC.",
+ "note": "`valid_from` is the start of the capture window, not a listing date. Instrument IDs are SEC CIKs (SEC-) or this project's NSE- identifiers.",
+ "instruments": [
+  {
+   "instrument_id": "SEC-0000320193",
+   "name": "Apple Inc.",
+   "sector": "Electronic Computers",
+   "aliases": [
+    "Apple"
+   ],
+   "listings": [
+    {
+     "symbol": "AAPL",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 320193,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0000789019",
+   "name": "Microsoft Corp",
+   "sector": "Services-Prepackaged Software",
+   "aliases": [
+    "Microsoft"
+   ],
+   "listings": [
+    {
+     "symbol": "MSFT",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 789019,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0001045810",
+   "name": "NVIDIA Corp",
+   "sector": "Semiconductors & Related Devices",
+   "aliases": [
+    "NVIDIA"
+   ],
+   "listings": [
+    {
+     "symbol": "NVDA",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1045810,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0001018724",
+   "name": "Amazon.com Inc",
+   "sector": "Retail-Catalog & Mail-Order Houses",
+   "aliases": [
+    "Amazon.com",
+    "Amazon"
+   ],
+   "listings": [
+    {
+     "symbol": "AMZN",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1018724,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0001652044",
+   "name": "Alphabet Inc.",
+   "sector": "Services-Computer Programming, Data Processing, Etc.",
+   "aliases": [
+    "Alphabet"
+   ],
+   "listings": [
+    {
+     "symbol": "GOOGL",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1652044,
+   "exchange": "Nasdaq,Nasdaq,Nasdaq,Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0001326801",
+   "name": "Meta Platforms, Inc.",
+   "sector": "Services-Computer Programming, Data Processing, Etc.",
+   "aliases": [
+    "Meta Platforms"
+   ],
+   "listings": [
+    {
+     "symbol": "META",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1326801,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0001318605",
+   "name": "Tesla, Inc.",
+   "sector": "Motor Vehicles & Passenger Car Bodies",
+   "aliases": [
+    "Tesla"
+   ],
+   "listings": [
+    {
+     "symbol": "TSLA",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1318605,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0001730168",
+   "name": "Broadcom Inc.",
+   "sector": "Semiconductors & Related Devices",
+   "aliases": [
+    "Broadcom"
+   ],
+   "listings": [
+    {
+     "symbol": "AVGO",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1730168,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0000019617",
+   "name": "JPMorgan Chase & Co",
+   "sector": "National Commercial Banks",
+   "aliases": [
+    "JPMorgan Chase",
+    "JPMorgan"
+   ],
+   "listings": [
+    {
+     "symbol": "JPM",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 19617,
+   "exchange": "NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE"
+  },
+  {
+   "instrument_id": "SEC-0001403161",
+   "name": "Visa Inc.",
+   "sector": "Services-Business Services, NEC",
+   "aliases": [
+    "Visa Inc"
+   ],
+   "listings": [
+    {
+     "symbol": "V",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1403161,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0001141391",
+   "name": "Mastercard Inc",
+   "sector": "Services-Business Services, NEC",
+   "aliases": [
+    "Mastercard"
+   ],
+   "listings": [
+    {
+     "symbol": "MA",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1141391,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000731766",
+   "name": "UnitedHealth Group Inc",
+   "sector": "Hospital & Medical Service Plans",
+   "aliases": [
+    "UnitedHealth Group",
+    "UnitedHealth"
+   ],
+   "listings": [
+    {
+     "symbol": "UNH",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 731766,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0002115436",
+   "name": "ExxonMobil Holdings Corp",
+   "sector": "Petroleum Refining",
+   "aliases": [
+    "Exxon Mobil",
+    "ExxonMobil"
+   ],
+   "listings": [
+    {
+     "symbol": "XOM",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 2115436,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000200406",
+   "name": "Johnson & Johnson",
+   "sector": "Pharmaceutical Preparations",
+   "aliases": [
+    "Johnson & Johnson"
+   ],
+   "listings": [
+    {
+     "symbol": "JNJ",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 200406,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000104169",
+   "name": "Walmart Inc.",
+   "sector": "Retail-Variety Stores",
+   "aliases": [
+    "Walmart"
+   ],
+   "listings": [
+    {
+     "symbol": "WMT",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 104169,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0000080424",
+   "name": "Procter & Gamble Co",
+   "sector": "Soap, Detergents, Cleang Preparations, Perfumes, Cosmetics",
+   "aliases": [
+    "Procter & Gamble"
+   ],
+   "listings": [
+    {
+     "symbol": "PG",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 80424,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000354950",
+   "name": "Home Depot, Inc.",
+   "sector": "Retail-Lumber & Other Building Materials Dealers",
+   "aliases": [
+    "Home Depot"
+   ],
+   "listings": [
+    {
+     "symbol": "HD",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 354950,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000909832",
+   "name": "Costco Wholesale Corp",
+   "sector": "Retail-Variety Stores",
+   "aliases": [
+    "Costco"
+   ],
+   "listings": [
+    {
+     "symbol": "COST",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 909832,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0000070858",
+   "name": "Bank of America Corp",
+   "sector": "National Commercial Banks",
+   "aliases": [
+    "Bank of America"
+   ],
+   "listings": [
+    {
+     "symbol": "BAC",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 70858,
+   "exchange": "NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,OTC,NYSE,NYSE,NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000021344",
+   "name": "Coca Cola Co",
+   "sector": "Beverages",
+   "aliases": [
+    "Coca-Cola"
+   ],
+   "listings": [
+    {
+     "symbol": "KO",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 21344,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000077476",
+   "name": "PepsiCo Inc",
+   "sector": "Beverages",
+   "aliases": [
+    "PepsiCo"
+   ],
+   "listings": [
+    {
+     "symbol": "PEP",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 77476,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0001065280",
+   "name": "Netflix Inc",
+   "sector": "Services-Video Tape Rental",
+   "aliases": [
+    "Netflix"
+   ],
+   "listings": [
+    {
+     "symbol": "NFLX",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1065280,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0001341439",
+   "name": "Oracle Corp",
+   "sector": "Services-Prepackaged Software",
+   "aliases": [
+    "Oracle"
+   ],
+   "listings": [
+    {
+     "symbol": "ORCL",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1341439,
+   "exchange": "NYSE,NYSE"
+  },
+  {
+   "instrument_id": "SEC-0001108524",
+   "name": "Salesforce, Inc.",
+   "sector": "Services-Prepackaged Software",
+   "aliases": [
+    "Salesforce"
+   ],
+   "listings": [
+    {
+     "symbol": "CRM",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1108524,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000002488",
+   "name": "Advanced Micro Devices Inc",
+   "sector": "Semiconductors & Related Devices",
+   "aliases": [
+    "Advanced Micro Devices"
+   ],
+   "listings": [
+    {
+     "symbol": "AMD",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 2488,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0000050863",
+   "name": "Intel Corp",
+   "sector": "Semiconductors & Related Devices",
+   "aliases": [
+    "Intel Corporation"
+   ],
+   "listings": [
+    {
+     "symbol": "INTC",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 50863,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0001744489",
+   "name": "Walt Disney Co",
+   "sector": "Services-Miscellaneous Amusement & Recreation",
+   "aliases": [
+    "Walt Disney"
+   ],
+   "listings": [
+    {
+     "symbol": "DIS",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1744489,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000858877",
+   "name": "Cisco Systems, Inc.",
+   "sector": "Computer Communications Equipment",
+   "aliases": [
+    "Cisco"
+   ],
+   "listings": [
+    {
+     "symbol": "CSCO",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 858877,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "SEC-0000310158",
+   "name": "Merck & Co., Inc.",
+   "sector": "Pharmaceutical Preparations",
+   "aliases": [
+    "Merck & Co"
+   ],
+   "listings": [
+    {
+     "symbol": "MRK",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 310158,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000078003",
+   "name": "Pfizer Inc",
+   "sector": "Pharmaceutical Preparations",
+   "aliases": [
+    "Pfizer"
+   ],
+   "listings": [
+    {
+     "symbol": "PFE",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 78003,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0001551152",
+   "name": "AbbVie Inc.",
+   "sector": "Pharmaceutical Preparations",
+   "aliases": [
+    "AbbVie"
+   ],
+   "listings": [
+    {
+     "symbol": "ABBV",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1551152,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000059478",
+   "name": "Eli Lilly & Co",
+   "sector": "Pharmaceutical Preparations",
+   "aliases": [
+    "Eli Lilly"
+   ],
+   "listings": [
+    {
+     "symbol": "LLY",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 59478,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000093410",
+   "name": "Chevron Corp",
+   "sector": "Petroleum Refining",
+   "aliases": [
+    "Chevron"
+   ],
+   "listings": [
+    {
+     "symbol": "CVX",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 93410,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000320187",
+   "name": "Nike, Inc.",
+   "sector": "Rubber & Plastics Footwear",
+   "aliases": [
+    "Nike, Inc"
+   ],
+   "listings": [
+    {
+     "symbol": "NKE",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 320187,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000012927",
+   "name": "Boeing Co",
+   "sector": "Aircraft",
+   "aliases": [
+    "Boeing"
+   ],
+   "listings": [
+    {
+     "symbol": "BA",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 12927,
+   "exchange": "NYSE,NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000018230",
+   "name": "Caterpillar Inc",
+   "sector": "Construction Machinery & Equip",
+   "aliases": [
+    "Caterpillar"
+   ],
+   "listings": [
+    {
+     "symbol": "CAT",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 18230,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000886982",
+   "name": "Goldman Sachs Group Inc",
+   "sector": "Security Brokers, Dealers & Flotation Companies",
+   "aliases": [
+    "Goldman Sachs"
+   ],
+   "listings": [
+    {
+     "symbol": "GS",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 886982,
+   "exchange": "NYSE,OTC,NYSE,NYSE,NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000895421",
+   "name": "Morgan Stanley",
+   "sector": "Security Brokers, Dealers & Flotation Companies",
+   "aliases": [
+    "Morgan Stanley"
+   ],
+   "listings": [
+    {
+     "symbol": "MS",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 895421,
+   "exchange": "NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE,NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000051143",
+   "name": "International Business Machines Corp",
+   "sector": "Computer & office Equipment",
+   "aliases": [
+    "International Business Machines",
+    "IBM"
+   ],
+   "listings": [
+    {
+     "symbol": "IBM",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 51143,
+   "exchange": "NYSE"
+  },
+  {
+   "instrument_id": "SEC-0000804328",
+   "name": "Qualcomm Inc",
+   "sector": "Radio & Tv Broadcasting & Communications Equipment",
+   "aliases": [
+    "Qualcomm"
+   ],
+   "listings": [
+    {
+     "symbol": "QCOM",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 804328,
+   "exchange": "Nasdaq"
+  },
+  {
+   "instrument_id": "NSE-0003",
+   "name": "Infosys Ltd",
+   "sector": "Services-Computer Programming Services",
+   "aliases": [
+    "Infosys"
+   ],
+   "listings": [
+    {
+     "symbol": "INFY",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1067491,
+   "exchange": "NSE"
+  },
+  {
+   "instrument_id": "NSE-0004",
+   "name": "HDFC Bank Ltd",
+   "sector": "Commercial Banks, NEC",
+   "aliases": [
+    "HDFC Bank"
+   ],
+   "listings": [
+    {
+     "symbol": "HDFCBANK",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1144967,
+   "exchange": "NSE"
+  },
+  {
+   "instrument_id": "NSE-0005",
+   "name": "ICICI Bank Ltd",
+   "sector": "Commercial Banks, NEC",
+   "aliases": [
+    "ICICI Bank"
+   ],
+   "listings": [
+    {
+     "symbol": "ICICIBANK",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1103838,
+   "exchange": "NSE"
+  },
+  {
+   "instrument_id": "NSE-0007",
+   "name": "Wipro Ltd",
+   "sector": "Services-Computer Programming Services",
+   "aliases": [
+    "Wipro"
+   ],
+   "listings": [
+    {
+     "symbol": "WIPRO",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1123799,
+   "exchange": "NSE"
+  },
+  {
+   "instrument_id": "NSE-0008",
+   "name": "Dr. Reddy's Laboratories Ltd",
+   "sector": "Pharmaceutical Preparations",
+   "aliases": [
+    "Dr. Reddy's",
+    "Dr Reddy's"
+   ],
+   "listings": [
+    {
+     "symbol": "DRREDDY",
+     "valid_from": "2026-01-01",
+     "valid_to": null
+    }
+   ],
+   "cik": 1135951,
+   "exchange": "NSE"
+  }
+ ]
+}

@@ -1,12 +1,17 @@
 /** Which listing universe an instrument belongs to, from its stable instrument_id prefix. */
 
-export type Market = "replay" | "nse";
+export type Market = "us" | "nse" | "replay";
 
 export const MARKET_LABEL: Record<Market, string> = {
-  replay: "Replay universe",
-  nse: "NSE India",
+  us: "US (SEC filers)",
+  nse: "India (NSE)",
+  replay: "Synthetic replay",
 };
 
+export const MARKET_ORDER: Market[] = ["us", "nse", "replay"];
+
 export function marketOf(instrumentId: string): Market {
-  return instrumentId.startsWith("NSE-") ? "nse" : "replay";
+  if (instrumentId.startsWith("SEC-")) return "us";
+  if (instrumentId.startsWith("NSE-")) return "nse";
+  return "replay";
 }

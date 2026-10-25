@@ -47,6 +47,12 @@ class Filing:
     """EDGAR acceptance time, UTC (verified: Apple's 16:30 New York releases show 20:30Z
     in summer and 21:30Z in winter)."""
     items: tuple[str, ...]
+    primary_document: str = ""
+    """File name of the filing's main document (the 8-K or 6-K itself)."""
+
+    @property
+    def folder_url(self) -> str:
+        return f"{SEC_WWW}/Archives/edgar/data/{self.cik}/{self.accession.replace('-', '')}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +72,7 @@ def parse_submissions(payload: bytes, cik: int) -> tuple[list[Filing], list[dict
     data = json.loads(payload)
     columns = data["filings"]["recent"] if "filings" in data else data
     files = data["filings"].get("files", []) if "filings" in data else []
+    documents = columns.get("primaryDocument") or [""] * len(columns["accessionNumber"])
     filings = []
     for i, accession in enumerate(columns["accessionNumber"]):
         accepted = columns["acceptanceDateTime"][i]
@@ -79,6 +86,7 @@ def parse_submissions(payload: bytes, cik: int) -> tuple[list[Filing], list[dict
                 filing_date=date.fromisoformat(columns["filingDate"][i]),
                 accepted_at=datetime.fromisoformat(accepted).astimezone(UTC),
                 items=tuple(item for item in columns["items"][i].split(",") if item),
+                primary_document=documents[i],
             )
         )
     return filings, files
@@ -131,8 +139,7 @@ def company_tickers(client: PoliteClient) -> dict[int, str]:
 
 
 def index_url(filing: Filing) -> str:
-    folder = filing.accession.replace("-", "")
-    return f"{SEC_WWW}/Archives/edgar/data/{filing.cik}/{folder}/{filing.accession}-index.htm"
+    return f"{filing.folder_url}/{filing.accession}-index.htm"
 
 
 _ROW = re.compile(r"<tr[^>]*>(.*?)</tr>", re.S | re.I)
@@ -184,7 +191,11 @@ class _NarrativeText(HTMLParser):
 
 def narrative_text(document: bytes) -> str:
     """Plain text of an exhibit, with tables removed from HTML documents."""
-    raw = document.decode("utf-8", errors="replace")
+    try:
+        raw = document.decode("utf-8")
+    except UnicodeDecodeError:
+        # Older EDGAR exhibits are often Windows-1252 (smart quotes as 0x92).
+        raw = document.decode("cp1252", errors="replace")
     if "<html" not in raw[:2000].lower() and "<body" not in raw[:5000].lower():
         return _TAG.sub(" ", raw)
     parser = _NarrativeText()

@@ -13,7 +13,8 @@ const MARGIN = { top: 14, right: 16, bottom: 28, left: 40 };
 const Y_TICKS = [-1, -0.5, 0, 0.5, 1];
 const HIT_RADIUS = 28;
 const HOUR = 3_600_000;
-const TICK_STEPS = [HOUR, 2 * HOUR, 3 * HOUR, 6 * HOUR, 12 * HOUR, 24 * HOUR, 48 * HOUR];
+const DAY = 24 * HOUR;
+const TICK_STEPS = [HOUR, 2 * HOUR, 3 * HOUR, 6 * HOUR, 12 * HOUR, DAY, 2 * DAY, 7 * DAY, 14 * DAY, 30 * DAY, 61 * DAY];
 
 type Hover =
   | { kind: "dot"; point: SentimentPoint; x: number; y: number }
@@ -21,7 +22,7 @@ type Hover =
 
 function timeTicks(start: number, end: number, maxTicks: number): number[] {
   const span = end - start;
-  const step = TICK_STEPS.find((candidate) => span / candidate <= maxTicks) ?? 7 * 24 * HOUR;
+  const step = TICK_STEPS.find((candidate) => span / candidate <= maxTicks) ?? 91 * DAY;
   const first = Math.ceil(start / step) * step;
   const ticks = [];
   for (let tick = first; tick <= end; tick += step) ticks.push(tick);

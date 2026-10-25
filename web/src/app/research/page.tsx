@@ -63,29 +63,32 @@ function sleep(ms: number, signal: AbortSignal) {
 export default function ResearchPage() {
   const { asOf, source } = useAppState();
   const overview = useApi<OverviewResponse>("v1/overview", { as_of: asOf });
-  const [symbol, setSymbol] = useState("NWSC");
+  const [chosen, setSymbol] = useState<string | null>(null);
   const [stored, setRun] = useState<RunState>({ key: "", phase: "idle" });
   const [evidenceId, setEvidenceId] = useState<string | null>(null);
   const controller = useRef<AbortController | null>(null);
   const isSnapshot = source?.source === "snapshot";
-  // A run belongs to one issuer and decision time; changing either shows that pair's state.
-  const runKey = `${symbol}|${asOf ?? "latest"}`;
-  const run: RunState = stored.key === runKey ? stored : { key: runKey, phase: "idle" };
-
-  const latest = useApi<ResearchBriefResponse>(`v1/research/${encodeURIComponent(symbol)}`, { as_of: asOf });
-  const evidence = useApi<EventDetailResponse>(evidenceId ? `v1/events/${evidenceId}` : null, { as_of: asOf });
-  const evidenceEvent: EventItem | null = evidenceId ? (evidence.data?.data ?? null) : null;
-
-  useEffect(() => () => controller.current?.abort(), []);
-  useEffect(() => () => controller.current?.abort(), [runKey]);
 
   const groups = useMemo(() => {
-    const result: Record<Market, { symbol: string; name: string; events: number }[]> = { replay: [], nse: [] };
+    const result: Record<Market, { symbol: string; name: string; events: number }[]> = { us: [], nse: [], replay: [] };
     for (const { instrument, event_count } of overview.data?.instruments ?? []) {
       result[marketOf(instrument.instrument_id)].push({ symbol: instrument.symbol, name: instrument.name, events: event_count });
     }
     return result;
   }, [overview.data]);
+  // Until the user picks one, show the first issuer of whatever dataset is loaded.
+  const symbol = chosen ?? (Object.values(groups).flat()[0]?.symbol ?? "");
+
+  // A run belongs to one issuer and decision time; changing either shows that pair's state.
+  const runKey = `${symbol}|${asOf ?? "latest"}`;
+  const run: RunState = stored.key === runKey ? stored : { key: runKey, phase: "idle" };
+
+  const latest = useApi<ResearchBriefResponse>(symbol ? `v1/research/${encodeURIComponent(symbol)}` : null, { as_of: asOf });
+  const evidence = useApi<EventDetailResponse>(evidenceId ? `v1/events/${evidenceId}` : null, { as_of: asOf });
+  const evidenceEvent: EventItem | null = evidenceId ? (evidence.data?.data ?? null) : null;
+
+  useEffect(() => () => controller.current?.abort(), []);
+  useEffect(() => () => controller.current?.abort(), [runKey]);
 
   async function generate() {
     controller.current?.abort();

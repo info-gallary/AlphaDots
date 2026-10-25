@@ -8,6 +8,12 @@ moment it became knowable.
 
 ## What works today
 
+- **Real data end to end.** The dashboard and `make demo` run on 535 real SEC EDGAR
+  filings (8-K and 6-K, January to October 2026) from 40 large US companies and the
+  five Indian companies that file with the SEC (Infosys, HDFC Bank, ICICI Bank, Wipro,
+  Dr. Reddy's, under their NSE symbols). Each item carries the filing's own headline,
+  the second EDGAR accepted it, and a link to it on sec.gov. Captured by
+  `make capture`; see [data and licences](docs/data-licenses.md).
 - **A pre-registered study on real data.** Does the tone of a company's quarterly
   results press release predict its stock over the next month? 9,746 SEC 8-K earnings
   releases (2016-2025) from 239 large US firms, each timed to the second EDGAR accepted
@@ -32,8 +38,8 @@ moment it became knowable.
 - **At-least-once delivery with idempotent effects.** Replays, redeliveries and restarts
   leave state byte-identical, and processing out of order gives the same signals.
 - **A bounded LangGraph research agent.** It writes issuer briefs where every claim cites
-  a stored item, and abstains when evidence is thin (it does for every NSE issuer, which
-  has no news). A second graph monitors the pipeline. Runs on Groq with a key, or on a
+  a stored item, and abstains when evidence is thin. A second graph monitors the
+  pipeline. Runs on Groq with a key, or on a
   deterministic mock with none. See [ADR 0003](docs/adr/0003-bounded-research-agent.md).
 - **A leakage-resistant backtest of the signal**, run where the right answer is known: a
   synthetic market with a planted effect and the same market with none. Expanding
@@ -45,10 +51,11 @@ moment it became knowable.
 - **A research dashboard**: a market overview (signal leaderboard, tone mix, daily news
   flow, issuer × day heatmap, strongest headlines), the event tape with provenance
   drill-down, issuer timelines, the research notebook, the earnings study, the backtest
-  lab, and pipeline monitoring. An as-of slider shows exactly what the system knew at any moment, and every
-  chart has a table view.
+  lab, and pipeline monitoring. An as-of slider shows exactly what the system knew at
+  any moment, and every chart has a table view.
 - **Deployable to Vercel as is.** With no backend attached, the dashboard serves the real
-  pipeline's output, plus agent briefs recorded at export, from a parity-tested snapshot.
+  pipeline's output over the real SEC filings, plus agent briefs recorded at export,
+  from a parity-tested snapshot.
 - **Deployment and DevSecOps**: multi-stage non-root images, Docker Compose profiles, a
   Helm chart and k3d config, Terraform for AWS (VPC, EKS, ECR, RDS, S3, OIDC IAM),
   GitHub Actions PR and release workflows, Prometheus and Grafana, six security scanners,
@@ -85,9 +92,12 @@ cd web && ALPHADOTS_API_URL=http://localhost:18000 pnpm dev
 
 **3. The real stack: Redpanda, PostgreSQL and one container per service**
 
-`make demo` does all of it in one go: starts every profile, seeds, replays the news at a
-watchable pace, runs the research agent for every issuer and prints the URLs, so every
-dashboard (the web app on :13000, Grafana on :13001) has data. Step by step:
+`make demo` does all of it on the **real** dataset: resets the local volumes, starts
+every profile, replays the SEC filings, asks the research agent for briefs and prints
+the URLs, so every dashboard (the web app on :13000, Grafana on :13001) has data. The
+step-by-step targets below use the deterministic synthetic fixtures, which is what the
+smoke checks expect; set `ALPHADOTS_DATASET=real ALPHADOTS_FEED_MODE=delayed` to run
+them on real data instead.
 
 ```bash
 make up          # builds images, starts everything, waits until healthy
@@ -126,8 +136,9 @@ what AWS would cost, and why nothing applies it automatically, is in
 ## Deploy the dashboard to Vercel
 
 Import the repository in Vercel, set **Root Directory** to `web`, and deploy. No
-environment variables are needed: it serves the bundled snapshot, including a recorded
-research brief for every issuer, and shows a **Snapshot** chip. Set `ALPHADOTS_API_URL`
+environment variables are needed: it serves the bundled snapshot of the real SEC
+filings, including a recorded research brief for every issuer, and shows an
+**SEC filings · snapshot** chip. Set `ALPHADOTS_API_URL`
 (and optionally `ALPHADOTS_API_TOKEN`) to attach a running API instead, which also
 enables generating new briefs.
 
@@ -165,7 +176,8 @@ services/          ingestion · preprocessor · sentiment · signal_engine · ap
 research/          offline studies: simulation (walk-forward, deflated Sharpe) and the
                    real-data earnings study (EDGAR client, event timing, clustered OLS)
 web/               Next.js dashboard (live proxy or bundled snapshot)
-data/fixtures/     synthetic news (CC0) plus the instrument master, hash-pinned by MANIFEST.json
+data/real/         real SEC 8-K/6-K filings and instruments (make capture), hash-pinned
+data/fixtures/     synthetic news (CC0) for deterministic tests, hash-pinned by MANIFEST.json
 infra/compose      Docker Compose stack and throwaway integration stack
 infra/helm, k3d    Helm chart and local cluster config
 infra/terraform    AWS modules and the dev environment (validated, never applied)
@@ -197,7 +209,10 @@ docs/              architecture, research report, threat model, runbooks, ADRs
 ## Known limitations
 
 - The sentiment model is a small hand-written lexicon. It is easy to fool; one fixture
-  shows a prompt-injection sentence raising its score.
+  shows a prompt-injection sentence raising its score. On the real filings it abstains
+  on about half (no lexicon match), and some scores are noisy. FinBERT (M2) is the fix.
+- Real-data headlines are extracted by rules from each filing; a few are imperfect
+  (wrapped titles cut short, generic "Other events"). Every item links to its source.
 - The earnings study uses Yahoo prices, which are not licensed for automated download;
   that was the owner's choice, the data stays local, and only aggregates are published.
   Prices exist only for firms still listed (61 of 300 are missing), so the results
@@ -209,8 +224,9 @@ docs/              architecture, research report, threat model, runbooks, ADRs
   uses a configured `τ`.
 - Dedup is exact-match after normalisation. "First processed wins" is not yet
   order-independent (M1 watermark policy).
-- NSE India issuers have no news source yet, so they carry no events or signals and the
-  research agent abstains for them. Attaching one needs a licensed feed, not scraping.
+- Indian coverage is limited to companies that file with the SEC; others (Reliance, TCS)
+  need a licensed NSE/BSE feed, not scraping. The real feed is a backfill from the
+  EDGAR archive, labelled delayed; a live EDGAR poller is the next M1 step.
 - The Helm chart is linted and templated, but `k3d cluster create` could not run on the
   development machine (it cannot reach ghcr.io for k3d's helper image). The AWS
   Terraform passes `validate` and has never been applied.

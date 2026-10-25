@@ -5,9 +5,10 @@
 
 Why this exists: the dashboard deploys to Vercel, which cannot run Redpanda, PostgreSQL or
 long-lived Kafka consumers. Without a reachable API the dashboard serves this snapshot
-instead. The snapshot is the real pipeline's output over the synthetic fixtures, not
-hand-written data: the fixtures are replayed through the same service code that the
-containers run, and the API's read model is dumped as is.
+instead. The snapshot is the real pipeline's output over real SEC EDGAR filings
+(``data/real``, captured by ``scripts/capture_edgar.py``), not hand-written data: the
+filings are replayed through the same service code that the containers run, and the
+API's read model is dumped as is.
 
 The dashboard answers point-in-time queries over the snapshot in TypeScript
 (``web/src/server/snapshot-api.ts``). To keep that honest, this script also records
@@ -45,15 +46,18 @@ from alphadots_signal_engine import processor as signal_engine
 from scripts.local_stack import LocalStack
 
 ROOT = Path(__file__).resolve().parent.parent
-FIXTURES_DIR = ROOT / "data" / "fixtures"
+FIXTURES_DIR = ROOT / "data" / "real"
 SNAPSHOT_FILE = ROOT / "web" / "src" / "data" / "snapshot.json"
 GOLDEN_FILE = ROOT / "web" / "test" / "parity.golden.json"
-FIXTURES = (Path("news/seed.jsonl"), Path("news/replay.jsonl"))
+FIXTURES = (Path("news/edgar.jsonl"),)
+FEED_MODE = "delayed"
+"""Real filings replayed from the archive: real data, not a real-time feed."""
 SNAPSHOT_VERSION = 1
 
-# Quarantined fixture lines carry no timestamp of their own, so they are stamped with the
-# end of the replayed window rather than the wall clock. That keeps the file byte-stable.
-DEAD_LETTER_CLOCK = datetime(2026, 3, 14, 0, 0, tzinfo=UTC)
+# Quarantined lines carry no timestamp of their own, so they are stamped with the end of
+# the replayed window (the capture ends 2026-10-23) rather than the wall clock. That
+# keeps the file byte-stable.
+DEAD_LETTER_CLOCK = datetime(2026, 10, 24, 0, 0, tzinfo=UTC)
 
 # Agent output recorded into the snapshot so a deployment without a live API can still show
 # real briefs. Each one is a genuine run of the research and monitor graphs (deterministic
@@ -67,28 +71,28 @@ AGENT_AS_OF = DEAD_LETTER_CLOCK
 # bounds that hide a score, a retired ticker, an ambiguous issuer, pagination, errors.
 PARITY_CASES: tuple[str, ...] = (
     "/v1/overview",
-    "/v1/overview?as_of=2026-03-02T13:30:05Z",
-    "/v1/overview?as_of=2026-03-06T12:00:00Z",
+    "/v1/overview?as_of=2026-02-01T00:00:00Z",
+    "/v1/overview?as_of=2026-07-01T12:00:00Z",
     "/v1/events?limit=200",
     "/v1/events?limit=5",
-    "/v1/events?symbol=NWSC&as_of=2026-03-05T00:00:00Z",
-    "/v1/events?symbol=VIRE",
+    "/v1/events?symbol=AAPL&as_of=2026-05-01T00:00:00Z",
+    "/v1/events?symbol=INFY",
     "/v1/events?include_duplicates=false&limit=200",
-    "/v1/events?as_of=2026-03-02T13:30:06Z&limit=3",
-    "/v1/events?as_of=2026-03-09T14:00:00%2B00:00&limit=20",
-    "/v1/sentiment/NWSC?window=24h&as_of=2026-03-02T23:00:00Z",
-    "/v1/sentiment/VRCS?window=24h",
-    "/v1/sentiment/CBHB?window=7d",
-    "/v1/sentiment/APXR?window=14d&as_of=2026-03-10T12:00:00Z",
-    "/v1/sentiment/HLCB?window=90m&as_of=2026-03-02T15:00:00Z",
-    "/v1/signals/NWSC",
-    "/v1/signals/APXE?as_of=2026-03-02T15:00:00Z",
-    "/v1/signals/HLCB?limit=5",
-    "/v1/signals/VIRE?as_of=2026-03-05T00:00:00Z",
-    "/v1/signals/LMGU?as_of=2026-03-02T13:30:05Z",
+    "/v1/events?as_of=2026-01-29T00:00:00Z&limit=3",
+    "/v1/events?as_of=2026-04-30T14:00:00%2B00:00&limit=20",
+    "/v1/sentiment/AAPL?window=24h&as_of=2026-04-30T23:00:00Z",
+    "/v1/sentiment/MSFT?window=24h",
+    "/v1/sentiment/JPM?window=7d",
+    "/v1/sentiment/NVDA?window=14d&as_of=2026-08-28T12:00:00Z",
+    "/v1/sentiment/HDFCBANK?window=90m&as_of=2026-10-19T12:00:00Z",
+    "/v1/signals/AAPL",
+    "/v1/signals/MSFT?as_of=2026-04-30T15:00:00Z",
+    "/v1/signals/JPM?limit=5",
+    "/v1/signals/INFY?as_of=2026-05-01T00:00:00Z",
+    "/v1/signals/WIPRO?as_of=2026-07-22T13:30:05Z",
     "/v1/instruments",
-    "/v1/instruments?query=apex",
-    "/v1/instruments?as_of=2026-03-05T00:00:00Z",
+    "/v1/instruments?query=bank",
+    "/v1/instruments?as_of=2026-05-01T00:00:00Z",
     "/v1/dead-letters",
     "/v1/signals/NOPE",
     "/v1/events?symbol=NOPE",
@@ -99,8 +103,8 @@ PARITY_CASES: tuple[str, ...] = (
     "/v1/events?limit=0",
     "/v1/events?limit=100000",
     "/v1/events?cursor=!!not-base64!!",
-    "/v1/sentiment/NWSC?window=soon",
-    "/v1/signals/NWSC?horizon=3d",
+    "/v1/sentiment/AAPL?window=soon",
+    "/v1/signals/AAPL?horizon=3d",
 )
 
 
@@ -140,7 +144,8 @@ async def _snapshot(stack: LocalStack) -> dict[str, Any]:
         "snapshot_version": SNAPSHOT_VERSION,
         "description": (
             "AlphaDots API read model and agent briefs, exported from the real pipeline "
-            "replaying synthetic fixtures; research only, not investment advice."
+            "replaying SEC EDGAR 8-K and 6-K filings (January to October 2026); research "
+            "only, not investment advice."
         ),
         "generated_by": "scripts/export_snapshot.py",
         "feed_mode": stack.settings.feed_mode,
@@ -240,7 +245,9 @@ async def _goldens(stack: LocalStack) -> list[dict[str, Any]]:
 
 async def build() -> tuple[str, str]:
     """Run the pipeline in-process and return (snapshot JSON, goldens JSON) as text."""
-    settings = Settings(_env_file=None, bus_backend="memory", fixtures_dir=FIXTURES_DIR)  # type: ignore[call-arg]
+    settings = Settings(  # type: ignore[call-arg]
+        _env_file=None, bus_backend="memory", fixtures_dir=FIXTURES_DIR, feed_mode=FEED_MODE
+    )
     stack = await LocalStack.create(settings)
     try:
         await stack.ingest(*FIXTURES, clock=lambda: DEAD_LETTER_CLOCK)

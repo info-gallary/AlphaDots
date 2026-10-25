@@ -43,6 +43,35 @@ NOT_YET = {
     "benchmark": "M6: controlled latency/throughput benchmark with recorded machine spec",
 }
 
+# Which dataset the compose stack runs on. Compose reads it from the environment on every
+# invocation, so it is remembered here: otherwise a later `make ui` would quietly recreate
+# the API on the other dataset. `make demo` selects `real`; deleting the volumes resets it.
+DATASET_FILE = ROOT / "var" / "dataset"
+DATASETS = {
+    "fixtures": {"ALPHADOTS_DATASET": "fixtures", "ALPHADOTS_FEED_MODE": "simulated"},
+    "real": {"ALPHADOTS_DATASET": "real", "ALPHADOTS_FEED_MODE": "delayed"},
+}
+
+
+def current_dataset() -> str:
+    name = DATASET_FILE.read_text(encoding="utf-8").strip() if DATASET_FILE.exists() else ""
+    return name if name in DATASETS else "fixtures"
+
+
+def use_dataset(name: str) -> None:
+    DATASET_FILE.parent.mkdir(parents=True, exist_ok=True)
+    DATASET_FILE.write_text(name, encoding="utf-8")
+    os.environ.update(DATASETS[name])
+
+
+def _require_fixtures(task: str) -> None:
+    if current_dataset() != "fixtures":
+        sys.exit(
+            f"`{task}` replays the synthetic fixtures, but the stack is running on real SEC "
+            "filings (make demo). Run `make down ARGS=--volumes` first."
+        )
+
+
 K3D_CLUSTER = "alphadots-dev"
 HELM_RELEASE = "alphadots"
 HELM_CHART = "infra/helm/alphadots"
@@ -107,20 +136,25 @@ def down(_extra: list[str]) -> None:
         "down",
         *_extra,
     )
+    if "--volumes" in _extra or "-v" in _extra:
+        DATASET_FILE.unlink(missing_ok=True)
 
 
 def seed(_extra: list[str]) -> None:
     """Load the curated seed fixture (idempotent: safe to repeat)."""
+    _require_fixtures("seed")
     run(*INGEST, "--fixture", "news/seed.jsonl")
 
 
 def replay(extra: list[str]) -> None:
     """Stream the bulk fixture. Pace it with `-- --speed 20000` for a live tape."""
+    _require_fixtures("replay")
     run(*INGEST, "--fixture", "news/replay.jsonl", *extra)
 
 
 def smoke(extra: list[str]) -> None:
     """Verify ingest -> score -> signal -> API against the running platform."""
+    _require_fixtures("smoke")
     seed([])
     run("uv", "run", "python", "-m", "scripts.smoke", "--base-url", API_URL, *extra)
 
@@ -147,21 +181,32 @@ def obs(_extra: list[str]) -> None:
 
 
 def demo(_extra: list[str]) -> None:
-    """Start everything, replay the news and drive the agent, so every dashboard has data."""
+    """Start everything on real SEC filings, replay them and drive the agent, so every
+    dashboard has data. Resets the local volumes first, so no synthetic data is mixed in."""
+    use_dataset("real")
+    run(
+        *COMPOSE, "--profile", "core", "--profile", "jobs", "--profile", "agents",
+        "--profile", "ui", "--profile", "obs", "down", "--volumes",
+    )  # fmt: skip
     run(
         *COMPOSE, "--profile", "core", "--profile", "agents", "--profile", "ui", "--profile", "obs",
         "up", "--detach", "--build", "--wait",
     )  # fmt: skip
-    run(*INGEST, "--fixture", "news/seed.jsonl")
-    # About a minute of live flow, so the throughput and latency panels have something to plot.
-    run(*INGEST, "--fixture", "news/replay.jsonl", "--speed", "20000")
+    # About a minute of flow (gaps capped at 0.1 s), so the throughput and latency panels
+    # have something to plot.
+    run(*INGEST, "--fixture", "news/edgar.jsonl", "--speed", "1000000", "--max-gap-seconds", "0.1")
     run("uv", "run", "python", "-m", "scripts.demo_traffic", "--base-url", API_URL)
     print(
-        "\nDashboard   http://localhost:13000"
+        "\nDashboard   http://localhost:13000   (real SEC filings, delayed feed)"
         "\nAPI docs    http://localhost:18000/docs"
         "\nGrafana     http://localhost:13001  (opens read-only; admin/admin to edit)"
         "\nPrometheus  http://localhost:19090/targets"
     )
+
+
+def capture(_extra: list[str]) -> None:
+    """Refresh data/real from SEC EDGAR (needs ALPHADOTS_SEC_USER_AGENT in .env)."""
+    run("uv", "run", "python", "-m", "scripts.capture_edgar")
 
 
 def _k3d_cluster_exists() -> bool:
@@ -438,6 +483,7 @@ TASKS: dict[str, Callable[[list[str]], None]] = {
     "ui": ui,
     "obs": obs,
     "demo": demo,
+    "capture": capture,
     "down": down,
     "k8s-up": k8s_up,
     "k8s-smoke": k8s_smoke,
@@ -474,6 +520,7 @@ def main() -> None:
         sys.exit(f"`{name}` is not implemented yet ({NOT_YET[name]})")
     if name not in TASKS:
         sys.exit(f"unknown task `{name}`; run with no arguments to list tasks")
+    os.environ.update(DATASETS[current_dataset()])
     TASKS[name](rest[1:] if rest[:1] == ["--"] else rest)
 
 

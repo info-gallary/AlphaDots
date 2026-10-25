@@ -20,15 +20,16 @@ async def test_committed_snapshot_and_goldens_match_the_pipeline() -> None:
     assert GOLDEN_FILE.read_text(encoding="utf-8") == golden_text, "run `make snapshot`"
 
 
-def test_snapshot_is_labelled_simulated_and_carries_its_lineage() -> None:
+def test_snapshot_is_labelled_delayed_real_data_and_carries_its_lineage() -> None:
     snapshot = json.loads(SNAPSHOT_FILE.read_text(encoding="utf-8"))
-    assert snapshot["feed_mode"] == "simulated"
+    assert snapshot["feed_mode"] == "delayed"
     assert "research only" in snapshot["description"]
-    assert set(snapshot["fixtures"]) == {
-        "instruments.json",
-        "news/seed.jsonl",
-        "news/replay.jsonl",
-    }
+    assert "SEC EDGAR" in snapshot["description"]
+    assert set(snapshot["fixtures"]) == {"instruments.json", "news/edgar.jsonl"}
+    assert all(event["source"] == "sec_edgar" for event in snapshot["events"])
+    assert all(
+        event["source_url"].startswith("https://www.sec.gov/") for event in snapshot["events"]
+    )
     assert all(len(digest) == 64 for digest in snapshot["fixtures"].values())
     assert snapshot["models"]["signal"].startswith("sentiment-decay-heuristic@")
     for signal in snapshot["signals"]:

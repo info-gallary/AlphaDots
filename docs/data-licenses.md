@@ -51,10 +51,42 @@ committing it.
 The baseline is easy to fool. The injected sentence in seed line 14 raises its score, and
 a test pins that weakness so it is never mistaken for robustness.
 
+## Real dataset (`data/real/`)
+
+What the dashboard, the Vercel snapshot and `make demo` show. Captured from SEC EDGAR by
+`scripts/capture_edgar.py` (`make capture`) for 40 large US companies and the five Indian
+companies that file with the SEC (Infosys, HDFC Bank, ICICI Bank, Wipro, Dr. Reddy's),
+for 1 January to 23 October 2026.
+
+| File | Contents |
+|---|---|
+| `instruments.json` | Each company's name, SEC CIK (the stable instrument ID, `SEC-<CIK>`), SIC industry and ticker, all from EDGAR. The Indian companies keep their NSE symbols and `NSE-` IDs. |
+| `news/edgar.jsonl` | One line per 8-K (US) or 6-K (foreign private issuer) filing: the headline of its press release or exchange letter (or the 8-K items it reports), an excerpt of at most 1,200 characters, the EDGAR acceptance time, and the filing's URL on sec.gov. |
+| `MANIFEST.json` | SHA-256 of each file (LF-normalised); a test fails if a file drifts. |
+
+**Terms.** EDGAR filings are public records filed with a US government agency; the
+download followed the SEC's fair-access policy (declared User-Agent, at most 8 requests a
+second). The text inside a filing (a press release, an exchange letter) is written by the
+company. The dataset quotes only a headline and a short excerpt of each, always with the
+link to the full filing, for research and education. No prices are included.
+
+**Timing.** `published_at` and `first_seen_at` are the EDGAR acceptance time, because
+EDGAR disseminates a filing when it accepts it; this is a backfill from the archive, so
+the feed is labelled **delayed**, not live. A live poller would record its own clock.
+
+**Headlines are extracted by rules**, not written by hand: the first title-like line of
+the press release, the subject line of an exchange letter, or the 8-K items the filing
+reports. Some are imperfect (a wrapped title cut short, a generic "Other events"); every
+item links to its source.
+
+Reliance, TCS and Sun Pharma, which were in the earlier NSE reference list, do not file
+with the SEC and have no permitted news source here, so they are not in this dataset.
+
 ## Dashboard snapshot
 
-`web/src/data/snapshot.json` is derived entirely from the fixtures above by
-`scripts/export_snapshot.py`, so the same CC0 dedication applies.
+`web/src/data/snapshot.json` is the pipeline's output over the real dataset above,
+exported by `scripts/export_snapshot.py`, so the same terms apply. The synthetic fixtures
+remain the basis of the deterministic tests and of `make up && make seed && make smoke`.
 
 ## Real data (the earnings study)
 

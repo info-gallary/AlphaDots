@@ -14,11 +14,12 @@ import { formatSigned } from "@/lib/format";
 import type { EventItem, EventsResponse, SentimentResponse, SignalsResponse } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 
+// Companies file every few weeks, so the useful windows are long; 7 days suits a busy tape.
 const WINDOWS = [
-  { value: "24h", label: "24 hours" },
-  { value: "3d", label: "3 days" },
   { value: "7d", label: "7 days" },
-  { value: "14d", label: "14 days" },
+  { value: "30d", label: "30 days" },
+  { value: "90d", label: "90 days" },
+  { value: "365d", label: "1 year" },
 ] as const;
 const DEFAULT_THRESHOLD = 0.15;
 
@@ -26,7 +27,7 @@ export default function IssuerPage() {
   const params = useParams<{ symbol: string }>();
   const symbol = decodeURIComponent(params.symbol ?? "").toUpperCase();
   const { asOf, refreshMs } = useAppState();
-  const [range, setRange] = useState<string>("7d");
+  const [range, setRange] = useState<string>("90d");
   const [selected, setSelected] = useState<EventItem | null>(null);
 
   const sentiment = useApi<SentimentResponse>(`v1/sentiment/${encodeURIComponent(symbol)}`, { window: range, as_of: asOf }, { refreshMs });

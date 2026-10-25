@@ -2,9 +2,9 @@
 
     uv run python -m scripts.demo_traffic --base-url http://localhost:18000
 
-Asks the research agent for a brief on every covered issuer (the NSE issuers have no
-news, so those runs abstain), polls each job, reads the monitor, and browses the same
-endpoints the dashboard uses. Everything here is an ordinary API call; nothing is
+Asks the research agent for briefs on the first ``--max-briefs`` issuers (so a hosted
+model's free-tier rate limit is not hit), polls each job, reads the monitor, and browses
+the same endpoints the dashboard uses. Everything here is an ordinary API call; nothing is
 written to the pipeline except the briefs the agent publishes. Part of `make demo`.
 """
 
@@ -16,12 +16,13 @@ import time
 
 import httpx
 
-JOB_DEADLINE_SECONDS = 60.0
+JOB_DEADLINE_SECONDS = 120.0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base-url", default="http://localhost:18000")
+    parser.add_argument("--max-briefs", type=int, default=12)
     args = parser.parse_args()
 
     client = httpx.Client(base_url=args.base_url, timeout=15.0)
@@ -41,7 +42,7 @@ def main() -> int:
         symbol: client.post("/v1/research/jobs", json={"symbol": symbol})
         .raise_for_status()
         .json()["data"]
-        for symbol in symbols
+        for symbol in symbols[: args.max_briefs]
     }
     deadline = time.monotonic() + JOB_DEADLINE_SECONDS
     outcomes: dict[str, str] = {}
@@ -63,7 +64,7 @@ def main() -> int:
         time.sleep(0.5)
 
     monitor = client.get("/v1/monitor").raise_for_status().json()["data"]
-    for symbol in symbols:
+    for symbol in symbols[: args.max_briefs]:
         print(f"  {symbol:<10} {outcomes.get(symbol, 'still running')}")
     print(f"monitor: {monitor['status']} - {monitor['headline']}")
     return 1 if jobs else 0

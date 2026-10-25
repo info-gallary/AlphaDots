@@ -27,9 +27,9 @@ TOP_N = 3
 LOW_UNCERTAINTY_MIN_SCORED = 5
 
 ALWAYS_MISSING = (
-    "Fundamentals and filings are not ingested yet (milestones M1 and M3); this brief "
-    "covers news sentiment and an unvalidated heuristic signal only, not valuation or "
-    "filing-backed facts."
+    "Financial statements, prices and valuation are not ingested (milestone M3); filings "
+    "are read only as news items. This brief covers their tone and an unvalidated "
+    "heuristic signal, not valuation or financial-statement facts."
 )
 
 

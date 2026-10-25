@@ -80,6 +80,7 @@ export function shortId(id: string, keep = 10): string {
 }
 
 export const SOURCE_NAMES: Record<string, string> = {
+  sec_edgar: "SEC EDGAR",
   synthetic_wire_a: "Wire A",
   synthetic_wire_b: "Wire B",
 };

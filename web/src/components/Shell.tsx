@@ -47,10 +47,18 @@ function SourceBadge() {
     );
   }
   if (source?.source === "snapshot") {
+    const real = feed?.mode === "delayed";
     return (
-      <span className="feed-chip" title="Fixture replay through the real pipeline, frozen into this deployment.">
+      <span
+        className="feed-chip"
+        title={
+          real
+            ? "Real SEC EDGAR filings, replayed through the real pipeline and frozen into this deployment. Delayed, not real-time."
+            : "Fixture replay through the real pipeline, frozen into this deployment."
+        }
+      >
         <span className="feed-dot" data-state="static" aria-hidden="true" />
-        Snapshot
+        {real ? "SEC filings · snapshot" : "Snapshot"}
       </span>
     );
   }
@@ -58,7 +66,13 @@ function SourceBadge() {
   return (
     <span
       className="feed-chip"
-      title={feed?.mode === "simulated" ? "Fixture replay through the live pipeline. Not exchange market data." : undefined}
+      title={
+        feed?.mode === "simulated"
+          ? "Fixture replay through the live pipeline. Not exchange market data."
+          : feed?.mode === "delayed"
+            ? "Real SEC EDGAR filings replayed from the archive. Not real-time."
+            : undefined
+      }
     >
       <span className="feed-dot" data-state={asOf === null ? "streaming" : "static"} aria-hidden="true" />
       {label} feed

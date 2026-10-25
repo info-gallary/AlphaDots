@@ -87,7 +87,7 @@ export default function OverviewPage() {
   }, [events]);
 
   const coverage = useMemo(() => {
-    const groups: Record<Market, typeof instruments> = { replay: [], nse: [] };
+    const groups: Record<Market, typeof instruments> = { us: [], nse: [], replay: [] };
     for (const item of instruments) groups[marketOf(item.instrument.instrument_id)].push(item);
     return groups;
   }, [instruments]);
@@ -117,7 +117,10 @@ export default function OverviewPage() {
         <StatTile
           label="Issuers covered"
           value={formatNumber(instruments.length)}
-          sub={`${coverage.replay.length} replay · ${coverage.nse.length} NSE India`}
+          sub={(Object.keys(coverage) as Market[])
+            .filter((market) => coverage[market].length > 0)
+            .map((market) => `${coverage[market].length} ${MARKET_LABEL[market]}`)
+            .join(" · ")}
         />
         <StatTile
           label="News items"
@@ -147,7 +150,7 @@ export default function OverviewPage() {
               <span className="card-note">{instruments.length} issuers</span>
             </div>
             <div className="card-body coverage">
-              {(Object.keys(coverage) as Market[]).map((market) => {
+              {(Object.keys(coverage) as Market[]).filter((market) => coverage[market].length > 0).map((market) => {
                 const group = coverage[market];
                 // One headline can name two issuers, so these are mentions, not distinct items.
                 const mentions = group.reduce((sum, item) => sum + item.event_count, 0);

@@ -58,7 +58,7 @@ for (const golden of cases) {
 }
 
 test("point-in-time: nothing in any response is newer than as_of", () => {
-  const asOf = "2026-03-06T12:00:00Z";
+  const asOf = "2026-05-06T12:00:00Z";
   const bound = Date.parse(asOf);
   const events = request(`/v1/events?limit=200&as_of=${asOf}`).body as {
     data: { available_at: string; sentiment: { available_at: string } | null }[];
@@ -68,7 +68,7 @@ test("point-in-time: nothing in any response is newer than as_of", () => {
     assert.ok(Date.parse(event.available_at) <= bound);
     if (event.sentiment) assert.ok(Date.parse(event.sentiment.available_at) <= bound);
   }
-  const signals = request(`/v1/signals/CBHB?as_of=${asOf}`).body as {
+  const signals = request(`/v1/signals/JPM?as_of=${asOf}`).body as {
     latest: { available_at: string; contributions: { available_at: string }[] } | null;
   };
   assert.ok(signals.latest);
@@ -104,24 +104,24 @@ test("research briefs: every covered issuer has one, and every citation resolves
   }
 });
 
-test("research briefs: an issuer with no news abstains instead of writing a thesis", () => {
-  const brief = (request("/v1/research/RELIANCE").body as BriefBody).data;
-  assert.ok(brief);
-  assert.equal(brief.abstained, true);
-  assert.equal(brief.abstain_reason, "insufficient_evidence");
-  assert.equal(brief.bull_case.length + brief.bear_case.length, 0);
+test("research briefs: an abstained brief makes no claims and says why", () => {
+  for (const { listings } of snapshot.reference.instruments) {
+    const symbol = listings[listings.length - 1]!.symbol;
+    const brief = (request(`/v1/research/${symbol}`).body as BriefBody).data;
+    if (!brief?.abstained) continue;
+    assert.ok(brief.abstain_reason, symbol);
+    assert.equal(brief.bull_case.length + brief.bear_case.length, 0, symbol);
+  }
 });
 
-test("research briefs are point-in-time and resolve retired tickers", () => {
-  const brief = (request("/v1/research/NWSC").body as BriefBody).data;
+test("research briefs are point-in-time; unknown tickers are 404", () => {
+  const brief = (request("/v1/research/AAPL").body as BriefBody).data;
   assert.ok(brief);
   const before = new Date(Date.parse(brief.available_at) - 60_000).toISOString();
-  assert.equal((request(`/v1/research/NWSC?as_of=${before}`).body as BriefBody).data, null);
-  // VIRE (Vireo's ticker until 2026-03-08) still resolves at a time it traded; no brief
-  // existed yet then, so the answer is a 200 with no data rather than a 404.
-  const retired = request("/v1/research/VIRE?as_of=2026-03-05T00:00:00Z");
-  assert.equal(retired.status, 200);
-  assert.equal((retired.body as BriefBody).data, null);
+  // The ticker traded then, but no brief existed yet: a 200 with no data, not a 404.
+  const earlier = request(`/v1/research/AAPL?as_of=${before}`);
+  assert.equal(earlier.status, 200);
+  assert.equal((earlier.body as BriefBody).data, null);
   assert.equal(request("/v1/research/NOPE").status, 404);
 });
 

@@ -12,7 +12,7 @@ ARGS ?=
 
 .DEFAULT_GOAL := help
 .PHONY: help setup up seed replay smoke agents agent-smoke ui obs demo down dev dev-agent web web-build \
-        test test-integration lint security fixtures research earnings-data earnings-study snapshot \
+        test test-integration lint security fixtures research earnings-data earnings-study capture snapshot \
         schemas benchmark k8s-up k8s-smoke k8s-down
 
 help:              ## List tasks
@@ -86,6 +86,9 @@ earnings-data:     ## Download SEC filings, prices and factors for the earnings 
 
 earnings-study:    ## Run the pre-registered earnings-tone study offline (Earnings page + report)
 	$(TASK) earnings-study
+
+capture:           ## Refresh data/real (SEC 8-K/6-K filings) for the dashboard and make demo
+	$(TASK) capture
 
 snapshot:          ## Re-export the dashboard snapshot and parity goldens
 	$(TASK) snapshot

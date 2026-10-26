@@ -67,6 +67,25 @@ moment it became knowable.
 
 ![Backtest lab](docs/images/backtest.png)
 
+## Tech stack: how each requirement is met
+
+| Requirement | What we used | Where it lives | Status |
+|---|---|---|---|
+| **Microservices** | Six Python 3.12 services on FastAPI and asyncio: `ingestion`, `preprocessor`, `sentiment`, `signal_engine`, `api`, `research_agent`, plus the Next.js `web` app. They talk only through versioned Kafka topics on Redpanda (`news.raw.v1` … `reports.generated.v1`, typed with Pydantic v2), with idempotent consumers and a dead-letter topic. Each service owns its own tables. | [`services/`](services), [`libs/contracts`](libs/contracts), [architecture](docs/architecture.md) | Running locally (`make demo`); a test fails if one service imports another |
+| **Docker** | Multi-stage builds (one shared [`service.Dockerfile`](infra/docker/service.Dockerfile) for every Python service, plus [`web/Dockerfile`](web/Dockerfile)). Non-root users, read-only root filesystems, dropped Linux capabilities, health checks, resource limits. Docker Compose profiles `core`, `jobs`, `agents`, `ui` and `obs`. | [`infra/docker`](infra/docker), [`infra/compose`](infra/compose) | All images build and run locally; CI builds every image |
+| **Infrastructure as Code** | Terraform for AWS: modules `vpc`, `ecr`, `s3`, `eks`, `rds` (password generated into Secrets Manager) and `iam` (GitHub Actions OIDC, least-privilege roles), plus a `dev` environment with S3/DynamoDB remote-state guidance. | [`infra/terraform`](infra/terraform), [cost guardrails](docs/cost-guardrails.md) | `terraform validate` passes; never applied, to avoid AWS charges |
+| **Kubernetes** | Helm chart: Deployments, StatefulSets for Redpanda and PostgreSQL, a topic-creation Job, an ingestion Job, ConfigMap, Secret references, readiness/liveness probes, resource limits, NetworkPolicy, PodDisruptionBudget and an optional HPA. A k3d cluster config with `make k8s-up`, `k8s-smoke` and `k8s-down`. | [`infra/helm/alphadots`](infra/helm/alphadots), [`infra/k3d`](infra/k3d), [runbook](docs/deployment-runbook.md) | `helm lint`/`helm template` pass and Checkov scans the rendered manifests in CI; a live k3d cluster could not be created on the development machine (see limitations) |
+| **CI/CD** | GitHub Actions with every action pinned by commit SHA. [`pr.yml`](.github/workflows/pr.yml): lint, strict mypy, tests with an 80% coverage gate, integration tests on real Redpanda and PostgreSQL, security scans, image build plus Trivy, Checkov. [`release.yml`](.github/workflows/release.yml): builds and pushes all 7 images to GHCR with recorded digests and a CycloneDX SBOM each, a staging deploy via OIDC, and a production deploy behind manual approval with a rollback command. Vercel deploys the dashboard from GitHub. | [`.github/workflows`](.github/workflows) | Release workflow green on `main`; the deploy jobs do nothing until an AWS role is configured |
+| **DevSecOps** | Gitleaks (secrets), Semgrep (static analysis), pip-audit and `pnpm audit` (dependencies), Trivy (images and misconfiguration), Checkov (Terraform and Helm), CycloneDX SBOMs, OIDC instead of long-lived cloud keys, scoped exception files ([`.trivyignore`](.trivyignore), [`.gitleaks.toml`](.gitleaks.toml)), and a STRIDE [threat model](docs/threat-model.md). | `make security`, [`scripts/tasks.py`](scripts/tasks.py) | Gitleaks, Semgrep, the dependency audits and Trivy block a merge; Checkov reports only, until a waiver policy exists |
+| **Cloud provider / local machine** | **Local first:** Docker Compose runs the whole platform with Prometheus, Grafana and Pushgateway, with no credentials needed; k3d for local Kubernetes. **Cloud, optional:** AWS (EKS, ECR, RDS, S3, Secrets Manager, IAM OIDC) through the Terraform above. **Hosting:** Vercel serves the dashboard from a parity-tested snapshot. | [`infra/compose`](infra/compose), [`infra/terraform`](infra/terraform), [Vercel guide](docs/deployment-vercel.md) | Local stack verified end to end; AWS is a planned shape, not a live deployment |
+
+**Application stack:** Python 3.12 with uv, FastAPI, Pydantic v2, SQLAlchemy, asyncio,
+Redpanda (Kafka API), PostgreSQL, LangGraph (Groq or a deterministic mock model), NumPy
+for the research studies, Next.js 16 with TypeScript for the dashboard, and Prometheus
+plus Grafana for observability. Data: SEC EDGAR, Kenneth French factors, the
+Loughran-McDonald dictionary and Yahoo prices (local only); see
+[data and licences](docs/data-licenses.md).
+
 ## Quick start
 
 Requirements: Python 3.12, [uv](https://docs.astral.sh/uv/), Node 22 with pnpm, and
